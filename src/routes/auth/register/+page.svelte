@@ -33,20 +33,8 @@
 	let companyName = $state('');
 	let industry = $state('');
 
-	async function handleRegister() {
-		if (password !== confirmPassword) {
-			alert('Passwords do not match');
-			return;
-		}
-
-		loading = true;
-		
-		// Simulate registration
-		setTimeout(() => {
-			loading = false;
-			goto('/dashboard');
-		}, 1500);
-	}
+	const registerStudent = register.for("student")
+	const registerCompany = register.for("company")
 </script>
 
 <Card class="p-6 shadow-lg">
@@ -69,7 +57,7 @@
 			</TabsList>
 
 			<TabsContent value="student">
-				<form {...register} class="space-y-4">
+				<form {...registerStudent} class="space-y-4">
 				  <input type="hidden" name="userType" value={userType}/>
 					<div class="grid grid-cols-2 gap-4">
 					  {#if error}
@@ -173,7 +161,7 @@
 			</TabsContent>
 
 			<TabsContent value="company">
-				<form {...register} class="space-y-4">
+				<form {...registerCompany} class="space-y-4">
 				  	<input type="hidden" name="userType" value={userType}/>
 					<div class="space-y-2">
 						<Label for="companyName">Company Name</Label>

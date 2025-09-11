@@ -1,6 +1,8 @@
 import { query, getRequestEvent, form, command } from '$app/server'
 
 import { signIn, createUser } from '$lib/server/auth'
+import { db } from '$lib/server/db'
+import { students, companies} from '$lib/server/db/schema'
 
 export const login = form(async (data) => {
   try {
@@ -37,6 +39,8 @@ export const register = form(async (formData) => {
 				...data,
 				name: `${data?.firstName} ${data?.lastName}`,
 			});
+			console.log(result)
+			if (!result.success) return { error: result.error }
 			
 		if(data.userType === 'student')	{
 		  
@@ -45,25 +49,25 @@ export const register = form(async (formData) => {
 		    firstName: data.firstName,
 		    lastName: data.lastName,
 		    university: data.university,
-		    department: data.department,
-		    level: data.level,
-		    location: data.location
+		    department: data.department || "Computer Engineering",
+		    level: data.level || "300",
+		    location: data.location || "Benin"
 		  })
 		} else if(data.userType === 'company')	{
 		  await db.insert(companies).values({
 		    userId: result.user.id,
-		    name: data.name,
+		    name: data.companyName,
 		    industry: data.industry,
-		    location: data.location,
-		    size: data.size,
-		    description: data.description
+		    location: data.location || "Benin",
+		    size: data.size || "30",
+		    description: data.description 
 		    
 		  })
 		}
 		  
 
-			if (!result.success) return { error: result.error }
 		} catch (error) {
+		  console.log(error)
 			return {
 				error: 'Signup failed',
 			};

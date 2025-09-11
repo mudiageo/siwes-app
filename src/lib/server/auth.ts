@@ -59,35 +59,32 @@ export const { handle, signIn, signOut, middleware, createUser } = await guardia
 					allowedRoles: ['admin', 'superadmin'],
 					redirectPath: '/login'
 				},
-				'/dashboard/admin': {
-					allowedRoles: ['admin', 'superadmin'],
-					redirectPath: '/login'
+				'/app/company': {
+					allowedRoles: ['admin', 'company'],
+					redirectPath: '/auth/login'
 				},
-				'/dashboard/client': {
-					allowedRoles: ['client', 'superadmin'],
-					redirectPath: '/login'
+				'/app/student': {
+					allowedRoles: ['student', 'superadmin'],
+					redirectPath: '/auth/login'
 				},
-				'/dashboard/technician': {
-					allowedRoles: ['technician', 'superadmin'],
-					redirectPath: '/login'
-				},
-				'/dashboard': {
+				'/app': {
 					authenticated: true,
-					redirectPath: '/login'
+					redirectPath: '/auth/login'
 				}
 			},
 			publicRoutes: {
-				'/login': {
-					redirectPath: '/dashboard'
+				'/auth/login': {
+					redirectPath: '/app'
 				},
-				'/register': {}
+				'/auth/register': {}
 			},
-			redirectPath: '/login',
-			authenticatedRedirect: '/dashboard',
-			roleKey: 'role'
+			redirectPath: '/auth/login',
+			authenticatedRedirect: '/app',
+			roleKey: 'userType'
 		}
 	},
 	pages: {
-		signIn: '/login'
+		signIn: '/auth/login',
+		signUp: '/auth/register'
 	}
 } satisfies GuardianAuthConfig);
