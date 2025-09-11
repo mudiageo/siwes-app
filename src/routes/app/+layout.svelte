@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import '../../app.css';
 	import { Toaster } from '$lib/components/ui/sonner';
@@ -20,12 +20,12 @@
 	let session = $derived(data.session);
 	let user = $derived(session?.user);
 	let userType = $derived(user?.userType);
-	let isOnAppPage = $derived($page.url.pathname.startsWith('/app'));
+	let isOnAppPage = $derived(page.url.pathname.startsWith('/app'));
 
 	// Redirect to appropriate app section
 	onMount(() => {
 		if (user && browser) {
-			const currentPath = $page.url.pathname;
+			const currentPath = page.url.pathname;
 			if (currentPath === '/app' || currentPath === '/app/') {
 				const redirectPath = userType === 'student' ? '/app/student' : '/app/company';
 				window.location.href = redirectPath;

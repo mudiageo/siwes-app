@@ -1,5 +1,7 @@
 <!-- src/routes/app/applications/+page.svelte -->
 <script lang="ts">
+	import { preventDefault } from 'svelte/legacy';
+
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -234,6 +236,7 @@
 				</div>
 			{:else}
 				{#each filteredApps as app}
+					{@const status = getStatusBadge(app.application.status)}
 					<Card class="p-6 hover:shadow-md transition-shadow">
 						<div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
 							<!-- Application Info -->
@@ -260,9 +263,9 @@
 									</div>
 
 									<div class="flex items-center gap-2">
-										{@const status = getStatusBadge(app.application.status)}
+									
 										<Badge variant={status.variant}>
-											<svelte:component this={status.icon} class="h-3 w-3 mr-1" />
+											<status.icon class="h-3 w-3 mr-1" />
 											{status.text}
 										</Badge>
 										
@@ -556,7 +559,7 @@
 				</div>
 
 				<!-- Message Input -->
-				<form on:submit|preventDefault={handleSendMessage} class="flex gap-2">
+				<form onsubmit={preventDefault(handleSendMessage)} class="flex gap-2">
 					<Textarea
 						bind:value={newMessage}
 						placeholder="Type your message..."

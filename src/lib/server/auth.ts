@@ -64,7 +64,8 @@ export const { handle, signIn, signOut, middleware, createUser } = await guardia
 					redirectPath: '/auth/login'
 				},
 				'/app/student': {
-					allowedRoles: ['student', 'superadmin'],
+				// 	allowedRoles: ['student', 'superadmin'],
+					authenticated: true,
 					redirectPath: '/auth/login'
 				},
 				'/app': {
@@ -78,7 +79,7 @@ export const { handle, signIn, signOut, middleware, createUser } = await guardia
 				},
 				'/auth/register': {}
 			},
-			redirectPath: '/auth/login',
+			redirectPath: '/auth/register',
 			authenticatedRedirect: '/app',
 			roleKey: 'userType'
 		}

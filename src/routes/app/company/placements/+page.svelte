@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: `{@const}` must be the immediate child of `{#snippet}`, `{#if}`, `{:else if}`, `{:else}`, `{#each}`, `{:then}`, `{:catch}`, `<svelte:fragment>`, `<svelte:boundary` or `<Component>`
+https://svelte.dev/e/const_tag_invalid_placement -->
 <!-- src/routes/app/company/placements/+page.svelte -->
 <script lang="ts">
 	import { Card } from '$lib/components/ui/card';
@@ -67,7 +69,7 @@
 		'Enugu', 'Jos', 'Kaduna', 'Warri', 'Calabar'
 	];
 
-	$: filteredPlacements = placements.filter(placement => {
+	let filteredPlacements = $derived(placements.filter(placement => {
 		const matchesSearch = placement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
 			placement.department.toLowerCase().includes(searchTerm.toLowerCase());
 		
@@ -76,7 +78,7 @@
 		if (filterStatus === 'inactive') return matchesSearch && !placement.isActive;
 		
 		return matchesSearch;
-	});
+	}));
 
 	async function handleCreatePlacement() {
 		isSaving = true;

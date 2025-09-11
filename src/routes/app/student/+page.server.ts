@@ -3,6 +3,7 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
 	const session = await event.locals.auth();
+	console.log(session)
 	if (!session?.user || session.user.userType !== 'student') {
 		redirect(302, '/auth/login');
 	}

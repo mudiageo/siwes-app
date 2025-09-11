@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { cn } from '$lib/utils';
@@ -40,7 +40,7 @@ import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	];
 
 	let navItems = $derived(userType === 'student' ? studentNavItems : companyNavItems);
-	let currentPath = $derived($page.url.pathname);
+	let currentPath = $derived(page.url.pathname);
 
 	function isActive(href: string): boolean {
 		return currentPath === href || currentPath.startsWith(href + '/');

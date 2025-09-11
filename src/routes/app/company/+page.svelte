@@ -6,15 +6,19 @@
 	import { 
 		TrendingUp, Users, FileText, Calendar, 
 		Star, ArrowRight, Target, Clock, Plus, Building2
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
+	import { getCompanyDashboard } from '$lib/dashboard.remote'
 
 	let { data } = $props();
 	
-	$: user = data.user;
-	$: company = data.company;
-	$: stats = data.stats;
-	$: recentApplications = data.recentApplications || [];
-	$: companyPlacements = data.companyPlacements || [];
+	let {
+    user,
+    company,
+    stats,
+    recentApplications,
+    companyPlacements
+  } = await getCompanyDashboard()
+
 </script>
 
 <svelte:head>

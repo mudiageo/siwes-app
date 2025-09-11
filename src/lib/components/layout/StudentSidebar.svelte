@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { cn } from '$lib/utils';
@@ -23,7 +23,7 @@
 		{ href: '/app/student/settings', icon: Settings, label: 'Settings' }
 	];
 
-	let currentPath = $derived($page.url.pathname);
+	let currentPath = $derived(page.url.pathname);
 
 	function isActive(href: string): boolean {
 		if (href === '/app/student') {
@@ -73,7 +73,7 @@
 							: "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
 					)}
 				>
-					<svelte:component this={item.icon} class="h-5 w-5 flex-shrink-0" />
+					<item.icon class="h-5 w-5 flex-shrink-0" />
 					{#if !collapsed}
 						<span class="ml-3">{item.label}</span>
 						{#if item.badge}

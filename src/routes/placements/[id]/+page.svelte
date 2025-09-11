@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: `$:` is not allowed in runes mode, use `$derived` or `$effect` instead
+https://svelte.dev/e/legacy_reactive_statement_invalid -->
 <!-- src/routes/placements/[id]/+page.svelte -->
 <script lang="ts">
 	import { Card } from '$lib/components/ui/card';

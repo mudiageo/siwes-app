@@ -5,30 +5,31 @@ import { db } from '$lib/server/db'
 import { students, companies} from '$lib/server/db/schema'
 
 export const login = form(async (data) => {
-  try {
+  // try {
     const event = getRequestEvent()
     event.request.formData = () => data
     await signIn(event)
-  }catch(e) {
-    const errCode = e.cause?.err?.code
-    let error = "An error occurred, please try again."
+  // }catch(e) {
+  //   console.log(e)
+  //   const errCode = e.cause?.err?.code
+  //   let error = "An error occurred, please try again."
     
-    switch (errCode) {
-		  case 'unverified_email':
-				error = 'Email must be verified';
-				break;
-			case 'account_not_found':
-				error = 'No account associated with this email';
-				break;
-			case 'invalid_credentials':
-				error = 'Invalid credentials';
-				break;
-		  }
+  //   switch (errCode) {
+		//   case 'unverified_email':
+		// 		error = 'Email must be verified';
+		// 		break;
+		// 	case 'account_not_found':
+		// 		error = 'No account associated with this email';
+		// 		break;
+		// 	case 'invalid_credentials':
+		// 		error = 'Invalid credentials';
+		// 		break;
+		//   }
     
-    return {
-      error
-    }
-  }
+  //   return {
+  //     error
+  //   }
+  // }
 })
 
 export const register = form(async (formData) => {
