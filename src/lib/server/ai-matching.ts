@@ -1,6 +1,6 @@
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
-import type { Student, Placement, Company } from '$lib/db/schema.js';
+import type { Student, Placement, Company } from '$lib/server/db/schema.js';
 
 export interface MatchScore {
 	overall: number;

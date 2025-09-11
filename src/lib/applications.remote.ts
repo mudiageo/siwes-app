@@ -1,8 +1,8 @@
 import { query, command } from '$app/server';
 import { getRequestEvent } from '$app/server';
 import * as v from 'valibot';
-import { db } from '$lib/db/index.js';
-import { applications, placements, companies, students } from '$lib/db/schema.js';
+import { db } from '$lib/server/db/index.js';
+import { applications, placements, companies, students } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { notifyApplicationStatusChange } from '$lib/server/notifications.js';
 

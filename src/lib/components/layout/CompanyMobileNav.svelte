@@ -2,7 +2,10 @@
 	import { page } from '$app/stores';
 	import { Badge } from '$lib/components/ui/badge';
 	import { cn } from '$lib/utils';
-	import { Home, Building2, FileText, User } from 'lucide-svelte';
+	import Home from '@lucide/svelte/icons/home';
+	import Building2 from '@lucide/svelte/icons/building-2';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import User from '@lucide/svelte/icons/user';
 
 	const navItems = [
 		{ href: '/app/company', icon: Home, label: 'Home' },
@@ -11,7 +14,7 @@
 		{ href: '/app/company/profile', icon: User, label: 'Profile' }
 	];
 
-	$: currentPath = $page.url.pathname;
+	let currentPath = $derived($page.url.pathname);
 
 	function isActive(href: string): boolean {
 		if (href === '/app/company') {

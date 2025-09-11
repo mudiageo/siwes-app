@@ -3,12 +3,17 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { cn } from '$lib/utils';
-	import { 
-		Home, Search, FileText, User, Settings, 
-		Bell, LogOut, ChevronLeft, ChevronRight
-	} from 'lucide-svelte';
+	import Home from '@lucide/svelte/icons/home';
+	import Search from '@lucide/svelte/icons/search';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import User from '@lucide/svelte/icons/user';
+	import Settings from '@lucide/svelte/icons/settings';
+	import Bell from '@lucide/svelte/icons/bell';
+	import LogOut from '@lucide/svelte/icons/log-out';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	
-	export let collapsed = false;
+	let { collapsed = $bindable(false) } = $props();
 
 	const navItems = [
 		{ href: '/app/student', icon: Home, label: 'Dashboard' },
@@ -18,7 +23,7 @@
 		{ href: '/app/student/settings', icon: Settings, label: 'Settings' }
 	];
 
-	$: currentPath = $page.url.pathname;
+	let currentPath = $derived($page.url.pathname);
 
 	function isActive(href: string): boolean {
 		if (href === '/app/student') {
@@ -46,7 +51,7 @@
 				variant="ghost"
 				size="sm"
 				class="h-8 w-8 p-0"
-				on:click={() => collapsed = !collapsed}
+				onclick={() => collapsed = !collapsed}
 			>
 				{#if collapsed}
 					<ChevronRight class="h-4 w-4" />

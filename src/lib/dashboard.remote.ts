@@ -1,7 +1,7 @@
 import { query } from '$app/server';
 import { getRequestEvent } from '$app/server';
-import { db } from '$lib/db/index.js';
-import { students, companies, applications, placements, notifications } from '$lib/db/schema.js';
+import { db } from '$lib/server/db/index.js';
+import { students, companies, applications, placements, notifications } from '$lib/server/db/schema.js';
 import { eq, and, desc, count } from 'drizzle-orm';
 import { findMatches } from '$lib/server/matching.js';
 

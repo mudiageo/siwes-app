@@ -2,8 +2,8 @@ import { query, form, command } from '$app/server';
 import { redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
 import { createUser, authenticateUser, getUserProfile } from '$lib/server/auth.js';
-import { db } from '$lib/db/index.js';
-import { users, students, companies } from '$lib/db/schema.js';
+import { db } from '$lib/server/db/index.js';
+import { users, students, companies } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 
 // Login form
