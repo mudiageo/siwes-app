@@ -8,7 +8,6 @@ export const login = form(async (data) => {
   try {
     const event = getRequestEvent()
 	console.log(data)
-	console.log(Object.fromEntries(data))
     event.request.formData = () => data
     // await signIn(event)
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { login } from '../auth.remote';
+	import { signIn } from 'svelte-guardian/client'
 
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
@@ -15,7 +16,46 @@
 	
 	let loading = $state(false);
 	let showPassword = $state(false);
+	let email = $state("");
+	let password = $state("");
 
+	let onsubmit = async (e) => {
+		e.preventDefault()
+		const result = await signIn("credentials", {
+			email,
+			password,
+			redirect:false,
+			callbackUrl: '/app'
+		});
+
+		let res = await result.json()
+
+		let error = "An error occurred, please try again."
+		if(result.error) {
+			error = 'Invalid email and/or password'
+		} else {
+
+		const url = new URL(res.url)
+console.log(res)
+		if(url.pathname === '/app') goto(`${url.pathname}/${res}`)
+		const errCode = url.searchParams.get('code')
+    
+    
+    switch (errCode) {
+		  case 'unverified_email':
+				error = 'Email must be verified';
+				break;
+			case 'account_not_found':
+			case 'user_not_found':
+				error = 'No account associated with this email';
+				break;
+			case 'invalid_credentials':
+				error = 'Invalid credentials';
+				break;
+		  }
+		}
+    
+	}
 </script>
 
 <Card class="p-6 shadow-lg">
@@ -25,7 +65,7 @@
 			<p class="text-sm text-muted-foreground mt-1">Sign in to your account</p>
 		</div>
 
-		<form {...login} class="space-y-4">
+		<form {onsubmit} class="space-y-4">
 		  	<input type="hidden" name="redirect" value={false} />
 			<input type="hidden" name="providerId" value="credentials" />
 			{#if login.result?.error}
@@ -42,13 +82,14 @@
 						id="email"
 						type="email"
 						name="email"
+						bind:value={email}
 						placeholder="your.email@university.edu.ng"
 						class="pl-10"
 						required
-					/>
-				</div>
+						/>
+					</div>
 			</div>
-
+			
 			<div class="space-y-2">
 				<Label for="password">Password</Label>
 				<div class="relative">
@@ -56,6 +97,7 @@
 					<Input
 						id="password"
 						name="password"
+						bind:value={password}
 						type={showPassword ? 'text' : 'password'}
 						placeholder="Enter your password"
 						class="pl-10 pr-10"
