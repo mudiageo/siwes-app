@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { Badge } from '$lib/components/ui/badge';
@@ -18,17 +19,16 @@
 	import Clock from '@lucide/svelte/icons/clock';
 	import AlertCircle from '@lucide/svelte/icons/alert-circle';
 	import { applyForPlacement } from '$lib/applications.remote';
-	import { generateCoverLetter } from '$lib/matching.remote';
+	import { generateCoverLetter, getMatchAnalysis } from '$lib/matching.remote';
 
-	let { data } = $props();
 	let applying = $state(false);
 	let generatingCoverLetter = $state(false);
 	let showApplicationDialog = $state(false);
 	let coverLetter = $state('');
 	let customMessage = $state('');
 
-	let { matchAnalysis } = $derived(data);
-	let { placement, score, reasons, hasApplied, applicationStatus } = $derived(matchAnalysis);
+	let placementId = $derived(page.params.id);
+	let matchAnalysisPromise = $derived(getMatchAnalysis({ placementId }));
 
 	function getScoreColor(score: number) {
 		if (score >= 80) return 'bg-green-500';
@@ -53,10 +53,10 @@
 		}
 	}
 
-	async function handleGenerateCoverLetter() {
+	async function handleGenerateCoverLetter(placement: any) {
 		generatingCoverLetter = true;
 		try {
-			coverLetter = await generateCoverLetter(data.user.id, placement.id);
+			coverLetter = await generateCoverLetter({ placementId: placement.id });
 		} catch (error) {
 			toast.error('Failed to generate cover letter');
 		} finally {
@@ -87,18 +87,29 @@
 	}
 </script>
 
-<div class="max-w-4xl mx-auto space-y-6">
-	<!-- Header -->
-	<div class="flex items-center gap-4">
-		<Button variant="ghost" size="sm" onclick={() => goto('/app/student/matches')}>
-			<ArrowLeft class="h-4 w-4" />
-			Back to Matches
-		</Button>
-		<div>
-			<h1 class="text-2xl font-bold">{placement.title}</h1>
-			<p class="text-muted-foreground">{placement.company.name}</p>
+{#await matchAnalysisPromise}
+	<div class="max-w-4xl mx-auto space-y-6">
+		<div class="flex items-center justify-center h-64">
+			<div class="text-center">
+				<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+				<p class="text-muted-foreground">Loading placement analysis...</p>
+			</div>
 		</div>
 	</div>
+{:then matchAnalysis}
+	{@const { placement, score, reasons, hasApplied, applicationStatus } = matchAnalysis}
+	<div class="max-w-4xl mx-auto space-y-6">
+		<!-- Header -->
+		<div class="flex items-center gap-4">
+			<Button variant="ghost" size="sm" onclick={() => goto('/app/student/matches')}>
+				<ArrowLeft class="h-4 w-4" />
+				Back to Matches
+			</Button>
+			<div>
+				<h1 class="text-2xl font-bold">{placement.title}</h1>
+				<p class="text-muted-foreground">{placement.company.name}</p>
+			</div>
+		</div>
 
 	<div class="grid lg:grid-cols-3 gap-6">
 		<!-- Main Content -->
@@ -391,4 +402,23 @@
 			</Card>
 		</div>
 	</div>
-</div>
+	</div>
+{:catch error}
+	<div class="max-w-4xl mx-auto space-y-6">
+		<div class="flex items-center gap-4">
+			<Button variant="ghost" size="sm" onclick={() => goto('/app/student/matches')}>
+				<ArrowLeft class="h-4 w-4" />
+				Back to Matches
+			</Button>
+		</div>
+		<Card>
+			<CardContent class="text-center py-8">
+				<AlertCircle class="h-12 w-12 text-red-500 mx-auto mb-4" />
+				<h2 class="text-lg font-semibold mb-2">Failed to Load Placement</h2>
+				<p class="text-muted-foreground">
+					{error.message || 'An error occurred while loading the placement details.'}
+				</p>
+			</CardContent>
+		</Card>
+	</div>
+{/await}

@@ -1,20 +1,42 @@
+import { query, command } from '$app/server';
+import { getRequestEvent } from '$app/server';
+import * as v from 'valibot';
 import { db } from '$lib/server/db/index.js';
 import { students, placements, companies, applications } from '$lib/server/db/schema.js';
 import { calculateAIMatchScore, generateAICoverLetter, type MatchResult } from '$lib/server/ai-matching.js';
 import { eq, and, sql, desc } from 'drizzle-orm';
 
+const FindMatchesSchema = v.optional(v.object({
+	limit: v.optional(v.number())
+}));
+
+const PlacementIdSchema = v.string();
+
+const MatchAnalysisSchema = v.object({
+	placementId: v.string()
+});
+
+const CoverLetterSchema = v.object({
+	placementId: v.string()
+});
+
 /**
  * Find best matching placements for a student using AI scoring
  */
-export async function findMatches(studentId: string, limit = 10): Promise<MatchResult[]> {
-	// Get student profile
-	const student = await db.query.students.findFirst({
-		where: eq(students.userId, studentId)
-	});
+export const findMatches = query(FindMatchesSchema, async (options = {}) => {
+	const event = getRequestEvent();
+	const session = await event.locals.auth();
+	
+	if (!session?.user || session.user.userType !== 'student') {
+		throw new Error('Student access required');
+	}
 
+	const student = session.user.profile;
 	if (!student) {
 		throw new Error('Student profile not found');
 	}
+
+	const limit = options?.limit ?? 10;
 
 	// Get available placements with company info
 	const availablePlacements = await db
@@ -47,16 +69,20 @@ export async function findMatches(studentId: string, limit = 10): Promise<MatchR
 	return matchResults
 		.sort((a, b) => b.score.overall - a.score.overall)
 		.slice(0, limit);
-}
+});
 
 /**
  * Get detailed match analysis between student and specific placement
  */
-export async function getMatchAnalysis(studentId: string, placementId: string) {
-	const student = await db.query.students.findFirst({
-		where: eq(students.userId, studentId)
-	});
+export const getMatchAnalysis = query(MatchAnalysisSchema, async ({ placementId }) => {
+	const event = getRequestEvent();
+	const session = await event.locals.auth();
+	
+	if (!session?.user || session.user.userType !== 'student') {
+		throw new Error('Student access required');
+	}
 
+	const student = session.user.profile;
 	if (!student) {
 		throw new Error('Student profile not found');
 	}
@@ -82,7 +108,7 @@ export async function getMatchAnalysis(studentId: string, placementId: string) {
 	// Check if student has already applied
 	const existingApplication = await db.query.applications.findFirst({
 		where: and(
-			eq(applications.studentId, studentId),
+			eq(applications.studentId, student.id),
 			eq(applications.placementId, placementId)
 		)
 	});
@@ -94,16 +120,20 @@ export async function getMatchAnalysis(studentId: string, placementId: string) {
 		hasApplied: !!existingApplication,
 		applicationStatus: existingApplication?.status
 	};
-}
+});
 
 /**
  * Generate AI-powered cover letter for application
  */
-export async function generateCoverLetter(studentId: string, placementId: string): Promise<string> {
-	const student = await db.query.students.findFirst({
-		where: eq(students.userId, studentId)
-	});
+export const generateCoverLetter = command(CoverLetterSchema, async ({ placementId }) => {
+	const event = getRequestEvent();
+	const session = await event.locals.auth();
+	
+	if (!session?.user || session.user.userType !== 'student') {
+		throw new Error('Student access required');
+	}
 
+	const student = session.user.profile;
 	if (!student) {
 		throw new Error('Student profile not found');
 	}
@@ -124,26 +154,60 @@ export async function generateCoverLetter(studentId: string, placementId: string
 
 	const { placement, company } = placementData[0];
 	return await generateAICoverLetter(student, placement, company);
-}
+});
 
 /**
  * Get matching statistics for student dashboard
  */
-export async function getMatchingStats(studentId: string) {
-	const matches = await findMatches(studentId, 50); // Get more for stats
+export const getMatchingStats = query(async () => {
+	const event = getRequestEvent();
+	const session = await event.locals.auth();
+	
+	if (!session?.user || session.user.userType !== 'student') {
+		throw new Error('Student access required');
+	}
+
+	const student = session.user.profile;
+	if (!student) {
+		throw new Error('Student profile not found');
+	}
+
+	// Get available placements for calculating matches
+	const availablePlacements = await db
+		.select({
+			placement: placements,
+			company: companies
+		})
+		.from(placements)
+		.innerJoin(companies, eq(placements.companyId, companies.userId))
+		.where(eq(placements.status, 'active'))
+		.orderBy(desc(placements.createdAt));
+
+	// Calculate match scores for statistics
+	const matchResults: MatchResult[] = [];
+	
+	for (const { placement, company } of availablePlacements.slice(0, 50)) { // Limit for performance
+		const score = await calculateAIMatchScore(student, placement);
+		
+		matchResults.push({
+			placement: { ...placement, company },
+			score,
+			reasons: []
+		});
+	}
 	
 	const totalPlacements = await db
 		.select({ count: sql<number>`count(*)` })
 		.from(placements)
 		.where(eq(placements.status, 'active'));
 
-	const excellentMatches = matches.filter(m => m.score.overall >= 0.8).length;
-	const goodMatches = matches.filter(m => m.score.overall >= 0.6 && m.score.overall < 0.8).length;
-	const fairMatches = matches.filter(m => m.score.overall >= 0.4 && m.score.overall < 0.6).length;
+	const excellentMatches = matchResults.filter(m => m.score.overall >= 0.8).length;
+	const goodMatches = matchResults.filter(m => m.score.overall >= 0.6 && m.score.overall < 0.8).length;
+	const fairMatches = matchResults.filter(m => m.score.overall >= 0.4 && m.score.overall < 0.6).length;
 
 	// Get student's applications
 	const studentApplications = await db.query.applications.findMany({
-		where: eq(applications.studentId, studentId),
+		where: eq(applications.studentId, student.id),
 		with: {
 			placement: {
 				with: {
@@ -153,27 +217,34 @@ export async function getMatchingStats(studentId: string) {
 		}
 	});
 
+	// Sort matches by score for top matches
+	const sortedMatches = matchResults.sort((a, b) => b.score.overall - a.score.overall);
+
 	return {
 		totalPlacements: totalPlacements[0].count,
-		totalMatches: matches.length,
+		totalMatches: matchResults.length,
 		excellentMatches,
 		goodMatches,
 		fairMatches,
 		applicationsCount: studentApplications.length,
 		pendingApplications: studentApplications.filter(a => a.status === 'pending').length,
 		acceptedApplications: studentApplications.filter(a => a.status === 'accepted').length,
-		topMatches: matches.slice(0, 5)
+		topMatches: sortedMatches.slice(0, 5)
 	};
-}
+});
 
 /**
  * Get recommended skills based on market trends and student profile
  */
-export async function getSkillRecommendations(studentId: string) {
-	const student = await db.query.students.findFirst({
-		where: eq(students.userId, studentId)
-	});
+export const getSkillRecommendations = query(async () => {
+	const event = getRequestEvent();
+	const session = await event.locals.auth();
+	
+	if (!session?.user || session.user.userType !== 'student') {
+		throw new Error('Student access required');
+	}
 
+	const student = session.user.profile;
 	if (!student) {
 		throw new Error('Student profile not found');
 	}
@@ -214,7 +285,7 @@ export async function getSkillRecommendations(studentId: string) {
 		trending: recommendedSkills.slice(0, 5),
 		departmentSpecific: recommendedSkills.filter(s => s.category === 'technical').slice(0, 3)
 	};
-}
+});
 
 function generateMatchReasons(student: any, placement: any, score: any): string[] {
 	const reasons: string[] = [];
