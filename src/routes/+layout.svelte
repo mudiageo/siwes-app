@@ -50,55 +50,7 @@
 </svelte:head>
 
 <ModeWatcher />
-{#if isAuthPage}
-	<!-- Auth pages without layout -->
+
 	<main class="min-h-screen">
 		{@render children?.()}
 	</main>
-{:else}
-	<!-- Main app layout -->
-	<div class="relative flex h-screen overflow-hidden">
-		<!-- Desktop Sidebar -->
-		<div class="hidden md:block">
-			<Sidebar bind:collapsed={sidebarCollapsed} {userType} />
-		</div>
-
-		<!-- Mobile Sidebar Overlay -->
-		{#if showMobileMenu}
-			<div 
-				class="fixed inset-0 z-50 md:hidden"
-				onclick={() => showMobileMenu = false}
-				onkeydown={(e) => e.key === 'Escape' && (showMobileMenu = false)}
-				role="button"
-				tabindex="0"
-			>
-				<div class="absolute inset-0 bg-background/80 backdrop-blur-sm"></div>
-				<div class="absolute left-0 top-0 h-full">
-					<Sidebar collapsed={false} {userType} />
-				</div>
-			</div>
-		{/if}
-
-		<!-- Main Content -->
-		<div class={cn(
-			"flex flex-1 flex-col overflow-hidden transition-all duration-300",
-			"md:ml-0", // Always start at 0 on mobile
-			!sidebarCollapsed ? "lg:ml-64" : "lg:ml-16"
-		)}>
-			<!-- Header -->
-			<Header 
-				title={pageTitle}
-				{showMobileMenu}
-				notificationCount={7}
-			/>
-
-			<!-- Page Content -->
-			<main class="main-content flex-1 p-6 pb-20 md:pb-6">
-				{@render children?.()}
-			</main>
-		</div>
-
-		<!-- Mobile Navigation -->
-		<MobileNav {userType} />
-	</div>
-{/if}
