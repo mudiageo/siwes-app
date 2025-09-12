@@ -13,7 +13,25 @@
 	import Star from '@lucide/svelte/icons/star';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { markAsRead, markAllAsRead, deleteNotification } from '$lib/notifications.remote';
-	import { formatDistanceToNow } from 'date-fns';
+    import { CalendarDate, now, getLocalTimeZone } from '@internationalized/date';
+    import { DateFormatter } from '@internationalized/date';
+
+    const formatter = new DateFormatter('en-NG', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    });
+
+    function formatDistanceToNow(date: Date) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+        
+        if (diffInSeconds < 60) return 'just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+        if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+        
+        return formatter.format(date);
+    }
 
 	let { data } = $props();
 	let notifications = $state(data.notifications);

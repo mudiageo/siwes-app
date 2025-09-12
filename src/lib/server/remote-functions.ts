@@ -1,9 +1,9 @@
-import { db } from '$lib/db/index.js';
-import { students, companies, applications, placements, notifications } from '$lib/db/schema.js';
+import { db } from '$lib/server/db';
+import { students, companies, applications, placements, notifications } from '$lib/server/db/schema';
 import { eq, and, desc, count } from 'drizzle-orm';
 import { findMatches } from '$lib/server/matching.js';
 import { createUser, hashPassword } from '$lib/server/auth.js';
-import { calculateMatchScore } from '$lib/server/matching.js';
+import { calculateAIMatchScore } from '$lib/server/ai-matching';
 import { createNotification, notifyNewApplication } from '$lib/server/notifications.js';
 import type { RequestEvent } from '@sveltejs/kit';
 
@@ -255,7 +255,7 @@ export async function createApplication(event: RequestEvent, placementId: string
 	}
 
 	// Calculate match score
-	const matchScore = calculateMatchScore(student, placement);
+	const matchScore = calculateAIMatchScore(student, placement);
 
 	// Create application
 	const [application] = await db.insert(applications).values({

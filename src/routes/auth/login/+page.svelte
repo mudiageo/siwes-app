@@ -7,14 +7,14 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import Eye from '@lucide/svelte/icons/eye';
-  import EyeOff from '@lucide/svelte/icons/eye-off';
-  import Mail from '@lucide/svelte/icons/mail';
-  import Lock from '@lucide/svelte/icons/lock';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import Mail from '@lucide/svelte/icons/mail';
+	import Lock from '@lucide/svelte/icons/lock';
 
 	import { goto } from '$app/navigation';
 	
 	let loading = $state(false);
-	let showPassword = $state(true);
+	let showPassword = $state(false);
 
 </script>
 
@@ -26,13 +26,13 @@
 		</div>
 
 		<form {...login} class="space-y-4">
-		  <input type="hidden" name="redirect" value="false" />
+		  	<input type="hidden" name="redirect" value={false} />
 			<input type="hidden" name="providerId" value="credentials" />
-			 {#if login.result?.error}
-  		    <div class="space-y-2">
-  			    {login.result?.error}
-  			  </div>
-  			{/if}
+			{#if login.result?.error}
+				<div class="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+					<p class="text-sm text-destructive">{login.result.error}</p>
+				</div>
+			{/if}
   			
 			<div class="space-y-2">
 				<Label for="email">Email</Label>
@@ -104,8 +104,3 @@
 </Card>
 
 
-{#if login.result?.error}
-	<div class="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-		<p class="text-sm text-destructive">{login.result.error}</p>
-	</div>
-{/if}

@@ -1,5 +1,3 @@
-<!-- @migration-task Error while migrating Svelte code: `</div>` attempted to close an element that was not open
-https://svelte.dev/e/element_invalid_closing_tag -->
 <script lang="ts">
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
@@ -154,6 +152,7 @@ https://svelte.dev/e/element_invalid_closing_tag -->
 								</div>
 							</div>
 						{:else}
+						<div class="flex items-center justify-between p-4 border border-border rounded-lg">
 							<FileText class="h-12 w-12 text-muted-foreground mx-auto mb-4" />
 							<p class="text-muted-foreground">No applications yet. Start applying to placements!</p>
 						</div>

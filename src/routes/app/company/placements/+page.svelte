@@ -1,6 +1,3 @@
-<!-- @migration-task Error while migrating Svelte code: `{@const}` must be the immediate child of `{#snippet}`, `{#if}`, `{:else if}`, `{:else}`, `{#each}`, `{:then}`, `{:catch}`, `<svelte:fragment>`, `<svelte:boundary` or `<Component>`
-https://svelte.dev/e/const_tag_invalid_placement -->
-<!-- src/routes/app/company/placements/+page.svelte -->
 <script lang="ts">
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
@@ -80,7 +77,8 @@ https://svelte.dev/e/const_tag_invalid_placement -->
 		return matchesSearch;
 	}));
 
-	async function handleCreatePlacement() {
+	async function handleCreatePlacement(e) {
+        e.preventDefault()
 		isSaving = true;
 		try {
 			const result = await createPlacement(new FormData());
@@ -208,7 +206,7 @@ https://svelte.dev/e/const_tag_invalid_placement -->
 					</DialogDescription>
 				</DialogHeader>
 				
-				<form on:submit|preventDefault={handleCreatePlacement} class="space-y-6">
+				<form onsubmit={handleCreatePlacement} class="space-y-6">
 					<!-- Basic Information -->
 					<div class="space-y-4">
 						<div class="space-y-2">
@@ -484,9 +482,10 @@ https://svelte.dev/e/const_tag_invalid_placement -->
 						Create Your First Placement
 					</Button>
 				{/if}
-			</div>
-		{:else}
-			{#each filteredPlacements as placement}
+                </div>
+                {:else}
+                {#each filteredPlacements as placement}
+                {@const status = getStatusBadge(placement)}
 				<Card class="p-6 hover:shadow-md transition-shadow">
 					<div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
 						<!-- Placement Info -->
@@ -502,9 +501,8 @@ https://svelte.dev/e/const_tag_invalid_placement -->
 									</p>
 								</div>
 
-								{@const status = getStatusBadge(placement)}
 								<Badge variant={status.variant} class="w-fit">
-									<svelte:component this={status.icon} class="h-3 w-3 mr-1" />
+									<status.icon class="h-3 w-3 mr-1" />
 									{status.text}
 								</Badge>
 							</div>

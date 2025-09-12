@@ -1,7 +1,7 @@
-import { db } from '$lib/db/index.js';
-import { students, placements, companies, applications } from '$lib/db/schema.js';
+import { db } from '$lib/server/db';
+import { students, placements, companies, applications } from '$lib/server/db/schema';
 import { eq, and, not, inArray } from 'drizzle-orm';
-import type { Student, Placement, Company } from '$lib/db/schema.js';
+import type { Student, Placement, Company } from '$lib/server/db/schema';
 
 export interface MatchScore {
 	overall: number;
@@ -63,7 +63,7 @@ export async function findMatches(studentId: string): Promise<MatchResult[]> {
 	return matches.sort((a, b) => b.score.overall - a.score.overall);
 }
 
-function calculateMatchScore(student: Student, placement: Placement): MatchScore {
+export function calculateMatchScore(student: Student, placement: Placement): MatchScore {
 	// Skills matching (40% weight)
 	const skillsScore = calculateSkillsMatch(student.skills || [], placement.requiredSkills || []);
 	
@@ -268,7 +268,7 @@ function generateMatchReasons(student: Student, placement: Placement, score: Mat
 	} else if (score.breakdown.locationScore >= 70) {
 		reasons.push('Good location fit');
 	}
-	
+
 	if (score.breakdown.industryScore >= 80) {
 		reasons.push('Excellent industry alignment');
 	}

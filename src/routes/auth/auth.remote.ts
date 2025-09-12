@@ -1,35 +1,54 @@
-import { query, getRequestEvent, form, command } from '$app/server'
-
+import { getRequestEvent, form, command } from '$app/server'
+import { isRedirect } from '@sveltejs/kit'
 import { signIn, createUser } from '$lib/server/auth'
 import { db } from '$lib/server/db'
 import { students, companies} from '$lib/server/db/schema'
 
 export const login = form(async (data) => {
-  // try {
+  try {
     const event = getRequestEvent()
+	console.log(data)
+	console.log(Object.fromEntries(data))
     event.request.formData = () => data
-    await signIn(event)
-  // }catch(e) {
-  //   console.log(e)
-  //   const errCode = e.cause?.err?.code
-  //   let error = "An error occurred, please try again."
+    // await signIn(event)
+
+	const res = await event.fetch("/auth/callback/credentials", {
+		method: "post",
+		headers: {
+			"Content-Type": "x-www-form-urlencoded",
+			"X-Auth-Return-Redirect": "1",
+		},
+		body: new URLSearchParams(Object.fromEntries(data))
+	})
+
+	const resData = await res.json()
+	console.log(resData)
+
+	
+  }catch(e) {
+    console.log(e)
+	if(isRedirect(e)) throw e;
+
+    const errCode = e.cause?.err?.code
+    let error = "An error occurred, please try again."
     
-  //   switch (errCode) {
-		//   case 'unverified_email':
-		// 		error = 'Email must be verified';
-		// 		break;
-		// 	case 'account_not_found':
-		// 		error = 'No account associated with this email';
-		// 		break;
-		// 	case 'invalid_credentials':
-		// 		error = 'Invalid credentials';
-		// 		break;
-		//   }
+    switch (errCode) {
+		  case 'unverified_email':
+				error = 'Email must be verified';
+				break;
+			case 'account_not_found':
+			case 'user_not_found':
+				error = 'No account associated with this email';
+				break;
+			case 'invalid_credentials':
+				error = 'Invalid credentials';
+				break;
+		  }
     
-  //   return {
-  //     error
-  //   }
-  // }
+    return {
+      error
+    }
+  }
 })
 
 export const register = form(async (formData) => {

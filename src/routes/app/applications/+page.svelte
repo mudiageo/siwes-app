@@ -6,7 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Input } from '$lib/components/ui/input';
-	import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import { Dialog, DialogContent, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Label } from '$lib/components/ui/label';
@@ -186,7 +186,7 @@
 			
 			<Select bind:value={filterStatus}>
 				<SelectTrigger class="w-48">
-					<SelectValue placeholder="Filter by status" />
+					{filterStatus ? filterStatus : "Filter by status"}
 				</SelectTrigger>
 				<SelectContent>
 					{#each statuses as status}

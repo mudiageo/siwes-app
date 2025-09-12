@@ -1,6 +1,3 @@
-<!-- @migration-task Error while migrating Svelte code: `$:` is not allowed in runes mode, use `$derived` or `$effect` instead
-https://svelte.dev/e/legacy_reactive_statement_invalid -->
-<!-- src/routes/placements/[id]/+page.svelte -->
 <script lang="ts">
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
@@ -9,12 +6,24 @@ https://svelte.dev/e/legacy_reactive_statement_invalid -->
 	import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '$lib/components/ui/dialog';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Label } from '$lib/components/ui/label';
-	import { 
-		MapPin, Clock, Users, Calendar, Star, 
-		Building2, Globe, Phone, Mail, ArrowLeft,
-		Send, Heart, Share, BookOpen, Award,
-		CheckCircle, AlertCircle, Wifi
-	} from 'lucide-svelte';
+    import MapPin from '@lucide/svelte/icons/map-pin';
+    import Clock from '@lucide/svelte/icons/clock';
+    import Users from '@lucide/svelte/icons/users';
+    import Calendar from '@lucide/svelte/icons/calendar';
+    import Star from '@lucide/svelte/icons/star';
+    import Building2 from '@lucide/svelte/icons/building-2';
+    import Globe from '@lucide/svelte/icons/globe';
+    import Phone from '@lucide/svelte/icons/phone';
+    import Mail from '@lucide/svelte/icons/mail';
+    import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+    import Send from '@lucide/svelte/icons/send';
+    import Heart from '@lucide/svelte/icons/heart';
+    import Share from '@lucide/svelte/icons/share';
+    import BookOpen from '@lucide/svelte/icons/book-open';
+    import Award from '@lucide/svelte/icons/award';
+    import CheckCircle from '@lucide/svelte/icons/check-circle';
+    import AlertCircle from '@lucide/svelte/icons/alert-circle';
+    import Wifi from '@lucide/svelte/icons/wifi';
 	
 	import { getPlacement } from '$lib/placements.remote.js';
 	import { applyToPlacement } from '$lib/matches.remote.js';
@@ -33,7 +42,8 @@ https://svelte.dev/e/legacy_reactive_statement_invalid -->
 	let isApplying = $state(false);
 	let isSaved = $state(false);
 
-	async function handleApply() {
+	async function handleApply(e) {
+		e.preventDefault()
 		if (!placement?.id || hasApplied) return;
 		
 		isApplying = true;
@@ -81,8 +91,8 @@ https://svelte.dev/e/legacy_reactive_statement_invalid -->
 		return { variant: 'outline', text: `${daysLeft} days left` };
 	}
 
-	$: daysLeft = placement ? getDaysUntilDeadline(placement.applicationDeadline) : 0;
-	$: urgencyBadge = getUrgencyBadge(daysLeft);
+	const daysLeft = $derived(placement ? getDaysUntilDeadline(placement.applicationDeadline) : 0);
+	const urgencyBadge = $derived(getUrgencyBadge(daysLeft));
 </script>
 
 <svelte:head>
@@ -99,7 +109,7 @@ https://svelte.dev/e/legacy_reactive_statement_invalid -->
 		
 		<div class="flex items-center gap-2 ml-auto">
 			<Button variant="ghost" onclick={toggleSave}>
-				<Heart class="h-4 w-4 mr-2" class:fill-red-500={isSaved} class:text-red-500={isSaved} />
+                <Heart class={["h-4 w-4 mr-2", isSaved && "fill-red-500 text-red-500"]} />
 				{isSaved ? 'Saved' : 'Save'}
 			</Button>
 			
@@ -324,7 +334,7 @@ https://svelte.dev/e/legacy_reactive_statement_invalid -->
 										</DialogDescription>
 									</DialogHeader>
 									
-									<form on:submit|preventDefault={handleApply} class="space-y-4">
+									<form onsubmit={handleApply} class="space-y-4">
 										<div class="space-y-2">
 											<Label for="coverLetter">Cover Letter (Optional)</Label>
 											<Textarea
@@ -383,7 +393,7 @@ https://svelte.dev/e/legacy_reactive_statement_invalid -->
 						
 						<div class="flex justify-between">
 							<span class="text-muted-foreground">Application Deadline:</span>
-							<span class:text-red-600={daysLeft <= 7}>
+							<span class={daysLeft <= 7 ? 'text-red-600' : ''}>
 								{formatDate(placement.applicationDeadline)}
 							</span>
 						</div>

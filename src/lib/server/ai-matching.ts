@@ -1,7 +1,5 @@
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
 import type { Student, Placement, Company } from '$lib/server/db/schema.js';
-
+import { GEMINI_API_KEY } from '$env/static/private'
 export interface MatchScore {
 	overall: number;
 	breakdown: {
@@ -18,7 +16,40 @@ export interface MatchResult {
 	score: MatchScore;
 	reasons: string[];
 }
+async function generateText(options: { prompt: string, model: string }): { text: string } {
+	const { prompt, model } = options
 
+	try {
+		const response = await fetch(`https://generativelanguage.googleapis.com/vibeta/models/${model}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-goog-api-key': GEMINI_API_KEY
+			},
+			body: JSON.stringify({
+				contents: [{
+					parts: [{
+						text: prompt
+					}]
+				}]
+			})
+		});
+		const data = response.json();
+
+		if(!response.ok) {
+			throw new Error(`Gemini API error: ${data.error?.message|| 'Unknon error'}`);
+		}
+
+		if(data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+			return {
+				text: data.candidates[0]?.content?.parts?.[0]?.text
+			}
+		}
+	} catch (e) {
+		
+	}
+
+}
 // AI-powered matching with Gemini integration
 export async function calculateAIMatchScore(student: Student, placement: Placement): Promise<MatchScore> {
 	// Traditional scoring
@@ -81,7 +112,7 @@ async function calculateNLPMatch(student: Student, placement: Placement): Promis
 		`;
 
 		const { text } = await generateText({
-			model: google('gemini-1.5-flash'),
+			model: 'gemini-2.5-flash',
 			prompt,
 			maxTokens: 10,
 			temperature: 0.1,
@@ -124,7 +155,7 @@ export async function generateAICoverLetter(student: Student, placement: Placeme
 		`;
 
 		const { text } = await generateText({
-			model: google('gemini-1.5-flash'),
+			model: 'gemini-2.5-flash',
 			prompt,
 			maxTokens: 400,
 			temperature: 0.7,

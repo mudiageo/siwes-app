@@ -1,7 +1,7 @@
-import { db } from '$lib/db/index.js';
-import { notifications } from '$lib/db/schema.js';
+import { db } from '$lib/server/db';
+import { notifications } from '$lib/server/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import type { Notification } from '$lib/db/schema.js';
+import type { Notification } from '$lib/server/db/schema';
 
 export async function createNotification(
 	userId: string,
