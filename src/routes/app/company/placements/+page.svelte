@@ -6,7 +6,7 @@
 	import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '$lib/components/ui/dialog';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
 	import SkillsInput from '$lib/components/forms/SkillsInput.svelte';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -224,7 +224,7 @@
 								<Label for="department">Department</Label>
 								<Select bind:value={newPlacement.department}>
 									<SelectTrigger>
-										<SelectValue placeholder="Select department" />
+										{newPlacement.department || "Select department"}
 									</SelectTrigger>
 									<SelectContent>
 										{#each departments as dept}
@@ -238,7 +238,7 @@
 								<Label for="location">Location</Label>
 								<Select bind:value={newPlacement.location}>
 									<SelectTrigger>
-										<SelectValue placeholder="Select location" />
+										{newPlacement.location || "Select location"}
 									</SelectTrigger>
 									<SelectContent>
 										{#each locations as location}
@@ -394,7 +394,7 @@
 			
 			<Select bind:value={filterStatus}>
 				<SelectTrigger class="w-40">
-					<SelectValue placeholder="Filter by status" />
+					{filterStatus || "Filter by status"}
 				</SelectTrigger>
 				<SelectContent>
 					<SelectItem value="all">All Placements</SelectItem>

@@ -27,7 +27,6 @@
 	
 	import { getPlacement } from '$lib/placements.remote.js';
 	import { applyToPlacement } from '$lib/matches.remote.js';
-	import { calculateMatchScore } from '$lib/server/matching.js';
 
 	let { data } = $props();
 	

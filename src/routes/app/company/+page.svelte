@@ -3,10 +3,16 @@
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { 
-		TrendingUp, Users, FileText, Calendar, 
-		Star, ArrowRight, Target, Clock, Plus, Building2
-	} from '@lucide/svelte';
+	import TrendingUp from '@lucide/svelte/icons/trending-up';
+import Users from '@lucide/svelte/icons/users';
+import FileText from '@lucide/svelte/icons/file-text';
+import Calendar from '@lucide/svelte/icons/calendar';
+import Star from '@lucide/svelte/icons/star';
+import ArrowRight from '@lucide/svelte/icons/arrow-right';
+import Target from '@lucide/svelte/icons/target';
+import Clock from '@lucide/svelte/icons/clock';
+import Plus from '@lucide/svelte/icons/plus';
+import Building2 from '@lucide/svelte/icons/building-2';
 	import { getCompanyDashboard } from '$lib/dashboard.remote'
 
 	let { data } = $props();

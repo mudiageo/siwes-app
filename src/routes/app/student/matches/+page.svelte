@@ -4,7 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import { Badge } from '$lib/components/ui/badge';
 	import MatchCard from '$lib/components/match/MatchCard.svelte';
 	import Search from '@lucide/svelte/icons/search';
@@ -136,7 +136,7 @@
 						<Label>Industry</Label>
 						<Select bind:value={selectedIndustry}>
 							<SelectTrigger>
-								<SelectValue placeholder="Any industry" />
+								{selectedIndustry || "Any industry"}
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="">Any industry</SelectItem>
@@ -151,7 +151,7 @@
 						<Label>Location</Label>
 						<Select bind:value={selectedLocation}>
 							<SelectTrigger>
-								<SelectValue placeholder="Any location" />
+								{selectedLocation || "Any location"}
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="">Any location</SelectItem>
@@ -166,7 +166,7 @@
 						<Label>Duration</Label>
 						<Select bind:value={selectedDuration}>
 							<SelectTrigger>
-								<SelectValue placeholder="Any duration" />
+								{selectedDuration || "Any duration"}
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="">Any duration</SelectItem>
@@ -181,7 +181,7 @@
 						<Label>Sort by</Label>
 						<Select bind:value={sortBy}>
 							<SelectTrigger>
-								<SelectValue />
+								{sortBy}
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="match-score">Match Score</SelectItem>

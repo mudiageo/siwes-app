@@ -3,7 +3,7 @@ import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db/index.js';
 import { notifications } from '$lib/server/db/schema.js';
 import { eq, and, desc, count } from 'drizzle-orm';
-
+import * as v from 'valibot';
 // Get user notifications
 export const getNotifications = query(async () => {
   const event = getRequestEvent();
@@ -56,6 +56,37 @@ export const markAllAsRead = command(async () => {
     .update(notifications)
     .set({ isRead: true })
     .where(eq(notifications.userId, session.user.id));
+
+  return { success: true };
+});
+
+export const markAsRead = command(v.string(), async (notificationId: string) => {
+  const event = getRequestEvent();
+  const session = await event.locals.auth();
+  
+  if (!session?.user) {
+    throw new Error('Authentication required');
+  }
+
+  await db
+    .update(notifications)
+    .set({ isRead: true })
+    .where(eq(notifications.id, notificationId));
+
+  return { success: true };
+});
+
+export const deleteNotification = command(v.string(), async (notificationId : string) => {
+  const event = getRequestEvent();
+  const session = await event.locals.auth();
+  
+  if (!session?.user) {
+    throw new Error('Authentication required');
+  }
+
+  await db
+    .delete(notifications)
+    .where(eq(notifications.id, notificationId));
 
   return { success: true };
 });

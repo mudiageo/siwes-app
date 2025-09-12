@@ -6,7 +6,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import { Badge } from '$lib/components/ui/badge';
 	import Building2 from '@lucide/svelte/icons/building-2';
 	import MapPin from '@lucide/svelte/icons/map-pin';
@@ -150,9 +150,9 @@
 					<div class="grid sm:grid-cols-2 gap-4">
 						<div class="space-y-2">
 							<Label for="industry">Industry</Label>
-							<Select disabled={!isEditing}>
+							<Select bind:value={formData.industry} disabled={!isEditing}>
 								<SelectTrigger>
-									<SelectValue placeholder="Select industry" />
+									{formData.industry || "Select industry"}
 								</SelectTrigger>
 								<SelectContent>
 									{#each industries as industry}
@@ -164,9 +164,9 @@
 
 						<div class="space-y-2">
 							<Label for="location">Location</Label>
-							<Select disabled={!isEditing}>
+							<Select bind:value={formData.Location} disabled={!isEditing}>
 								<SelectTrigger>
-									<SelectValue placeholder="Select location" />
+									{formData.location || "Select location"}
 								</SelectTrigger>
 								<SelectContent>
 									{#each locations as location}
@@ -180,9 +180,9 @@
 					<div class="grid sm:grid-cols-2 gap-4">
 						<div class="space-y-2">
 							<Label for="size">Company Size</Label>
-							<Select disabled={!isEditing}>
+							<Select bind:value={formData.size} disabled={!isEditing}>
 								<SelectTrigger>
-									<SelectValue placeholder="Select company size" />
+									{formData.size || "Select company size"}
 								</SelectTrigger>
 								<SelectContent>
 									{#each companySizes as size}

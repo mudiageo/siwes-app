@@ -72,7 +72,8 @@
 
 		applying = true;
 		try {
-			await applyForPlacement(placement.id, {
+			await applyForPlacement({
+			  placementId: placement.id,
 				coverLetter: coverLetter.trim() || customMessage.trim()
 			});
 			toast.success('Application submitted successfully!');

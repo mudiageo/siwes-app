@@ -6,7 +6,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+	import { Select, SelectContent, SelectItem, SelectTrigger, } from '$lib/components/ui/select';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Progress } from '$lib/components/ui/progress';
 	import SkillsInput from '$lib/components/forms/SkillsInput.svelte';
@@ -227,9 +227,9 @@
 
 					<div class="space-y-2">
 						<Label for="location">Current Location</Label>
-						<Select disabled={!isEditing}>
+						<Select bind:value={formData.location} disabled={!isEditing}>
 							<SelectTrigger>
-								<SelectValue placeholder="Select location" />
+								{formData.location || "Select location"}
 							</SelectTrigger>
 							<SelectContent>
 								{#each locations as location}
@@ -262,9 +262,9 @@
 				<div class="grid sm:grid-cols-2 gap-4">
 					<div class="space-y-2">
 						<Label for="university">University</Label>
-						<Select disabled={!isEditing}>
+						<Select bind:value={formData.university} disabled={!isEditing}>
 							<SelectTrigger>
-								<SelectValue placeholder="Select university" />
+								{formData.university || "Select university"}
 							</SelectTrigger>
 							<SelectContent>
 								{#each universities as university}
@@ -276,9 +276,9 @@
 
 					<div class="space-y-2">
 						<Label for="department">Department</Label>
-						<Select disabled={!isEditing}>
+						<Select bind:value={formData.department} disabled={!isEditing}>
 							<SelectTrigger>
-								<SelectValue placeholder="Select department" />
+								{formData.department || "Select department"}
 							</SelectTrigger>
 							<SelectContent>
 								{#each departments as department}
@@ -290,9 +290,9 @@
 
 					<div class="space-y-2">
 						<Label for="level">Level</Label>
-						<Select disabled={!isEditing}>
+						<Select bind:value={formData.level} disabled={!isEditing}>
 							<SelectTrigger>
-								<SelectValue placeholder="Select level" />
+								{formData.level || "Select level"}
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="200">200 Level</SelectItem>
