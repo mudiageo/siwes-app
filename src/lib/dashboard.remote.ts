@@ -4,7 +4,7 @@ import { db } from '$lib/server/db/index.js';
 import { students, companies, applications, placements, notifications } from '$lib/server/db/schema.js';
 import { eq, and, desc, count } from 'drizzle-orm';
 import { findMatches } from '$lib/server/matching.js';
-
+import { getProfile } from './profile.remote'
 // Get student dashboard data
 export const getStudentDashboard = query(async () => {
   const event = getRequestEvent();
@@ -14,7 +14,7 @@ export const getStudentDashboard = query(async () => {
     throw new Error('Student access required');
   }
 
-  const student = session.user.profile;
+  const { profile: student } = await getProfile();
   if (!student) throw new Error('Student profile not found');
 
   // Get recent matches
@@ -76,7 +76,7 @@ export const getCompanyDashboard = query(async () => {
     throw new Error('Company access required');
   }
 
-  const company = session.user.profile;
+  const { profile: company } = await getProfile();
   if (!company) throw new Error('Company profile not found');
 
   // Get company placements
