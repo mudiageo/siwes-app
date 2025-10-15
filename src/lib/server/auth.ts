@@ -4,6 +4,9 @@ import { twoFactor, admin, multiSession } from 'better-auth/plugins';
 import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
+import { sveltekitCookies } from "better-auth/svelte-kit";
+import { getRequestEvent } from "$app/server";
+
 
 export const auth = betterAuth({
 	database: drizzleAdapter(db, {
@@ -125,6 +128,8 @@ export const auth = betterAuth({
 		// Multi-session support
 		multiSession(),
 		// Admin plugin for user management
-		admin()
+		admin(),
+		sveltekitCookies(getRequestEvent),
+		
 	]
 });
