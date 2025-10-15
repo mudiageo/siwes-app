@@ -1,100 +1,165 @@
-import { getRequestEvent, form, command } from '$app/server'
-import { isRedirect } from '@sveltejs/kit'
-import { signIn, createUser } from '$lib/server/auth'
-import { db } from '$lib/server/db'
-import { students, companies} from '$lib/server/db/schema'
+import { getRequestEvent, form } from '$app/server';
+import { redirect } from '@sveltejs/kit'
+import { auth } from '$lib/server/auth';
+import { isRedirect } from '@sveltejs/kit';
+import { db } from '$lib/server/db';
+import { students, companies } from '$lib/server/db/schema';
+import { parseAuthError, validateEmail, validatePassword } from '$lib/utils/auth-errors';
 
 export const login = form(async (data) => {
-  try {
-    const event = getRequestEvent()
-	console.log(data)
-    event.request.formData = () => data
-    // await signIn(event)
+	try {
+		const event = getRequestEvent();
+		const email = data.get('email') as string;
+		const password = data.get('password') as string;
 
-	const res = await event.fetch("/auth/callback/credentials", {
-		method: "post",
-		headers: {
-			"Content-Type": "x-www-form-urlencoded",
-			"X-Auth-Return-Redirect": "1",
-		},
-		body: new URLSearchParams(Object.fromEntries(data))
-	})
+		// Validate input
+		const emailError = validateEmail(email);
+		if (emailError) {
+			return { error: emailError.message };
+		}
 
-	const resData = await res.json()
-	console.log(resData)
+		const passwordError = validatePassword(password);
+		if (passwordError) {
+			return { error: passwordError.message };
+		}
 
-	
-  }catch(e) {
-    console.log(e)
-	if(isRedirect(e)) throw e;
+		// Use Better Auth API to sign in
+		const result = await auth.api.signInEmail({
+			body: {
+				email,
+				password
+			},
+			headers: event.request.headers
+		});
 
-    const errCode = e.cause?.err?.code
-    let error = "An error occurred, please try again."
-    
-    switch (errCode) {
-		  case 'unverified_email':
-				error = 'Email must be verified';
-				break;
-			case 'account_not_found':
-			case 'user_not_found':
-				error = 'No account associated with this email';
-				break;
-			case 'invalid_credentials':
-				error = 'Invalid credentials';
-				break;
-		  }
-    
-    return {
-      error
-    }
-  }
-})
+		// Better Auth returns the user object on success, not an error property
+		if (!result || !(result as any).user) {
+			return { error: 'Invalid email or password' };
+		}
+console.log('Login successful:', result);
+		// Redirect based on user type if needed
+		// redirect(303, `/app/${result.user.userType}`)
+		return {
+			success: true
+		};
+	} catch (e: unknown) {
+		if(isRedirect(e)) throw e;
+		console.error('Login error:', e);
+		const authError = parseAuthError(e);
+		return {
+			error: authError.message
+		};
+	}
+});
 
 export const register = form(async (formData) => {
-  		try {
-  		  const data = Object.fromEntries(formData);
-  		  console.log(data)
-			const result = await createUser({
-				...data,
-				name: `${data?.firstName} ${data?.lastName}`,
-			});
-			console.log(result)
-			if (!result.success) return { error: result.error }
-			
-		if(data.userType === 'student')	{
-		  
-		  await db.insert(students).values({
-		    userId: result.user.id,
-		    firstName: data.firstName,
-		    lastName: data.lastName,
-		    university: data.university,
-		    department: data.department || "Computer Engineering",
-		    level: data.level || "300",
-		    location: data.location || "Benin"
-		  })
-		} else if(data.userType === 'company')	{
-		  await db.insert(companies).values({
-		    userId: result.user.id,
-		    name: data.companyName,
-		    industry: data.industry,
-		    location: data.location || "Benin",
-		    size: data.size || "30",
-		    description: data.description 
-		    
-		  })
-		}
-		  
+	try {
+		const data = Object.fromEntries(formData);
+		const event = getRequestEvent();
 
-		} catch (error) {
-		  console.log(error)
-			return {
-				error: 'Signup failed',
+		// Validate required fields
+		const email = data.email as string;
+		const password = data.password as string;
+		const userType = data.userType as string;
+
+		// Validate email
+		const emailError = validateEmail(email);
+		if (emailError) {
+			return { error: emailError.message };
+		}
+
+		// Validate password
+		const passwordError = validatePassword(password);
+		if (passwordError) {
+			return { error: passwordError.message };
+		}
+
+		// Validate user type specific fields
+		if (userType === 'student') {
+			if (!data.firstName || !data.lastName || !data.university) {
+				return { error: 'Please fill in all required fields' };
+			}
+		} else if (userType === 'company') {
+			if (!data.companyName || !data.industry) {
+				return { error: 'Please fill in all required fields' };
+			}
+		} else {
+			return { error: 'Invalid user type' };
+		}
+
+		// Create user with Better Auth
+		const result = await auth.api.signUpEmail({
+			body: {
+				email,
+				password,
+				name: userType === 'student' 
+					? `${data.firstName} ${data.lastName}` 
+					: data.companyName as string,
+				firstName: data.firstName as string,
+				lastName: data.lastName as string,
+				userType
+			},
+			headers: event.request.headers
+		});
+
+		// Better Auth returns user object on success
+		if (!result || !(result as any).user) {
+			return { error: 'Failed to create account. Please try again.' };
+		}
+
+		const userId = (result as any).user.id;
+
+		if (!userId) {
+			return { error: 'Failed to create user account' };
+		}
+
+		// Create student or company profile
+		try {
+			if (userType === 'student') {
+				await db.insert(students).values({
+					userId: userId,
+					firstName: data.firstName as string,
+					lastName: data.lastName as string,
+					university: data.university as string,
+					department: (data.department as string) || 'Computer Engineering',
+					level: parseInt((data.level as string) || '300'),
+					location: (data.location as string) || 'Lagos'
+				});
+			} else if (userType === 'company') {
+				await db.insert(companies).values({
+					userId: userId,
+					name: data.companyName as string,
+					industry: data.industry as string,
+					location: (data.location as string) || 'Lagos',
+					size: (data.size as any) || 'small',
+					description: (data.description as string) || `${data.companyName} - ${data.industry} company`
+				});
+			}
+		} catch (profileError: any) {
+			console.error('Profile creation error:', profileError);
+			// User was created but profile failed - we still return success
+			// but log the error for investigation
+			return { 
+				error: 'Account created but profile setup incomplete. Please contact support.',
+				partialSuccess: true 
 			};
 		}
+		const resultSignin = await auth.api.signInEmail({
+			body: {
+				email,
+				password
+			},
+			headers: event.request.headers
+		});
 
-		// log the user in
-		const event = getRequestEvent()
-    event.request.formData = () => formData
-    await signIn(event)
-    
-})
+		return {
+			success: true
+		};
+	} catch (error: any) {
+		console.error('Registration error:', error);
+		const authError = parseAuthError(error);
+		return {
+			error: authError.message
+		};
+	}
+});

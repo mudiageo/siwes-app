@@ -5,6 +5,7 @@ import { db } from '$lib/server/db/index.js';
 import { students, placements, companies, applications } from '$lib/server/db/schema.js';
 import { calculateAIMatchScore, generateAICoverLetter, type MatchResult } from '$lib/server/ai-matching.js';
 import { eq, and, sql, desc } from 'drizzle-orm';
+import { auth } from '$lib/server/auth';
 
 const FindMatchesSchema = v.optional(v.object({
 	limit: v.optional(v.number())
@@ -25,7 +26,9 @@ const CoverLetterSchema = v.object({
  */
 export const findMatches = query(FindMatchesSchema, async (options = {}) => {
 	const event = getRequestEvent();
-	const session = await event.locals.auth();
+	const session = await auth.api.getSession({
+		headers: event.request.headers
+	});
 	
 	if (!session?.user || session.user.userType !== 'student') {
 		throw new Error('Student access required');

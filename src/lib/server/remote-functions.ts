@@ -1,11 +1,10 @@
 import { db } from '$lib/server/db';
-import { students, companies, applications, placements, notifications } from '$lib/server/db/schema';
+import { students, companies, applications, placements, notifications, users } from '$lib/server/db/schema';
 import { eq, and, desc, count } from 'drizzle-orm';
 import { findMatches } from '$lib/server/matching.js';
-import { createUser } from '$lib/server/auth.js';
-import { hashPassword } from 'svelte-guardian';
 import { calculateAIMatchScore } from '$lib/server/ai-matching';
 import { createNotification, notifyNewApplication } from '$lib/server/notifications.js';
+import { auth } from '$lib/server/auth';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // Authentication helpers
@@ -320,48 +319,7 @@ export async function markAllNotificationsAsRead(event: RequestEvent) {
 	return { success: true };
 }
 
-// Registration function
-export async function registerUser(event: RequestEvent, userData: any) {
-	const { email, password, userType } = userData;
-
-	if (!email || !password || !userType) {
-		throw new Error('Missing required fields');
-	}
-
-	// Create user
-	const user = await createUser(email, password, userType);
-
-	// Create profile based on user type
-	if (userType === 'student') {
-		const { firstName, lastName, university, department, level } = userData;
-		await db.insert(students).values({
-			userId: user.id,
-			firstName,
-			lastName,
-			university,
-			department,
-			level: parseInt(level),
-			location: 'Lagos', // Default
-			profileCompleteness: 0.3
-		});
-	} else {
-		const { companyName, industry, location } = userData;
-		await db.insert(companies).values({
-			userId: user.id,
-			name: companyName,
-			industry,
-			location,
-			size: 'medium', // Default
-			description: 'Company description to be updated'
-		});
-	}
-
-	return {
-		id: user.id,
-		email: user.email,
-		userType: user.userType
-	};
-}
+// Note: Registration is now handled in auth.remote.ts using Better Auth API
 
 // Settings functions
 export async function getUserSettings(event: RequestEvent) {
@@ -389,12 +347,16 @@ export async function updateUserSettings(event: RequestEvent, settings: any) {
 	}
 	
 	// Update password if provided
-	if (settings.newPassword) {
-		const hashedPassword = await hashPassword(settings.newPassword);
-		await db
-			.update(users)
-			.set({ hashedPassword })
-			.where(eq(users.id, user.id));
+	if (settings.newPassword && settings.currentPassword) {
+		// Use Better Auth's change password API
+		await auth.api.changePassword({
+			body: {
+				newPassword: settings.newPassword,
+				currentPassword: settings.currentPassword,
+				revokeOtherSessions: false
+			},
+			headers: event.request.headers
+		});
 	}
 	
 	// Update profile settings based on user type

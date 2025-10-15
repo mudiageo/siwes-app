@@ -1,91 +1,130 @@
-import { guardianAuth, type GuardianAuthConfig } from 'svelte-guardian';
+import { betterAuth } from 'better-auth';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { twoFactor, admin, multiSession } from 'better-auth/plugins';
 import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db';
-import { DrizzleAdapter } from '@auth/drizzle-adapter';
-import { users, accounts, sessions, verificationTokens} from '$lib/server/db/schema';
+import * as schema from '$lib/server/db/schema';
 
-const adapter = DrizzleAdapter(db,  {
-      usersTable: users,
-      accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-		});
-
-export const { handle, signIn, signOut, middleware, createUser } = await guardianAuth({
-	database: {
-		type: 'custom',
-		adapter
-	},
-	providers: {
-		google: {
-			enabled: true
+export const auth = betterAuth({
+	database: drizzleAdapter(db, {
+		schema: {
+			...schema,
+			user: schema.users
 		},
-		credentials: {
-			additionalUserFields: ['role'],
-			allowRegistration: true,
-			requireEmailVerification: false
+		provider: 'pg',
+		usePlural: true
+	}),
+	emailAndPassword: {
+		enabled: true,
+		requireEmailVerification: false, // Set to true when email provider is configured
+		minPasswordLength: 8,
+		maxPasswordLength: 128,
+		autoSignIn: true,
+		sendResetPassword: async ({ user, url, token }) => {
+			// TODO: Implement email sending for password reset
+			// When ready, send email with reset link: url
+			console.log(`Password reset link for ${user.email}: ${url}`);
 		}
 	},
-	security: {
-		maxLoginAttempts: 5,
-		lockoutDuration: 15 * 60 * 1000, // 15 minutes
-		emailVerification: {
-			method: 'link',
-			otpLength: 6,
-			otpExpiration: 15 // in minutes
+	socialProviders: {
+		google: {
+			clientId: env.GOOGLE_CLIENT_ID as string,
+			clientSecret: env.GOOGLE_CLIENT_SECRET as string,
+			enabled: !!env.GOOGLE_CLIENT_ID && !!env.GOOGLE_CLIENT_SECRET
+		}
+	},
+	// Email verification configuration
+	emailVerification: {
+		sendVerificationEmail: async ({ user, url, token }) => {
+			// TODO: Implement email sending for verification
+			// When ready, send email with verification link: url
+			console.log(`Email verification link for ${user.email}: ${url}`);
 		},
-		passwordReset: {
-			tokenExpiration: 15
-		},
-		twoFactorAuth: {
-			method: 'totp',
-			allowBackupCodes: true,
-			backupCodeCount: 5
-		},		
-		emailProvider: {
-			type: 'nodemailer',
-			service: 'gmail',
-			from: 'SIWES AI <no-reply@siwesai.com>',
-			auth: {
-				method: 'app-password',
-				user: env.GMAIL_USER,
-				appPass: env.GMAIL_APP_PASSWORD
+		sendOnSignUp: false, // Set to true when email provider is configured
+		autoSignInAfterVerification: true
+	},
+	// Session configuration
+	session: {
+		expiresIn: 60 * 60 * 24 * 7, // 7 days
+		updateAge: 60 * 60 * 24, // 1 day - update session if older than this
+		cookieCache: {
+			enabled: true,
+			maxAge: 60 * 5 // 5 minutes
+		}
+	},
+	// Account management
+	account: {
+		accountLinking: {
+			enabled: true,
+			trustedProviders: ['google']
+		}
+	},
+	// Security settings
+	rateLimit: {
+		enabled: true,
+		window: 60, // 1 minute
+		max: 10 // 10 requests per window
+	},
+	// Advanced configuration
+	advanced: {
+		generateId: () => crypto.randomUUID(),
+		crossSubDomainCookies: {
+			enabled: false
+		}
+	},
+	// User configuration
+	user: {
+		additionalFields: {
+			firstName: {
+				type: 'string',
+				required: false,
+				input: true
+			},
+			lastName: {
+				type: 'string',
+				required: false,
+				input: true
+			},
+			phone: {
+				type: 'string',
+				required: false,
+				input: true
+			},
+			userType: {
+				type: 'string',
+				required: true,
+				input: true,
+				returned: true
+			},
+			isActive: {
+				type: 'boolean',
+				required: false,
+				defaultValue: true,
+				input: false
 			}
 		},
-		
-		routeProtection: {
-			protectedRoutes: {
-				'/admin': {
-					allowedRoles: ['admin', 'superadmin'],
-					redirectPath: '/login'
-				},
-				'/app/company': {
-					allowedRoles: ['admin', 'company'],
-					redirectPath: '/auth/login'
-				},
-				'/app/student': {
-				// 	allowedRoles: ['student', 'superadmin'],
-					authenticated: true,
-					redirectPath: '/auth/login'
-				},
-				'/app': {
-					authenticated: true,
-					redirectPath: '/auth/login'
-				}
-			},
-			publicRoutes: {
-				'/auth/login': {
-					redirectPath: '/app'
-				},
-				'/auth/register': {}
-			},
-			redirectPath: '/auth/register',
-			authenticatedRedirect: '/app',
-			roleKey: 'userType'
+		changeEmail: {
+			enabled: true,
+			sendChangeEmailVerification: async ({ user, newEmail, url, token }) => {
+				// TODO: Implement email sending for email change verification
+				console.log(`Email change verification for ${user.email} to ${newEmail}: ${url}`);
+			}
 		}
 	},
-	pages: {
-		signIn: '/auth/login',
-		signUp: '/auth/register'
-	}
-} satisfies GuardianAuthConfig);
+	// Plugins
+	plugins: [
+		// Two-factor authentication plugin
+		twoFactor({
+			issuer: env.BETTER_AUTH_URL || 'SIWES AI',
+			skipVerificationOnEnable: false,
+			totpOptions: {
+				period: 30,
+				digits: 6
+			}
+		}),
+		// Multi-session support
+		multiSession(),
+		// Admin plugin for user management
+		admin()
+	]
+});

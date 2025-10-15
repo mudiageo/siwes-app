@@ -1,98 +1,93 @@
-import { pgTable, text, integer, real, boolean, timestamp, json, index, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, real, boolean, timestamp, json, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
+// Better Auth core schema
 export const users = pgTable('user', {
-  id: text('id')
-		.primaryKey()
-		.default(sql`gen_random_uuid()`),
-	email: text('email').notNull().unique(),
-  password: text('password'),
-  firstName: text('first_name').notNull(),
-  lastName: text('last_name').notNull(),
-  name: text('name'),
-  emailVerified: timestamp('emailVerified', { mode: 'date' }),
-  image: text('image'),  
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  emailVerified: boolean('email_verified').default(false).notNull(),
+  image: text('image'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+  twoFactorEnabled: boolean('two_factor_enabled').default(false),
+  role: text('role'),
+  banned: boolean('banned').default(false),
+  banReason: text('ban_reason'),
+  banExpires: timestamp('ban_expires'),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
   phone: text('phone'),
-	userType: text('user_type', { enum: ['student', 'company'] }).notNull(),
-  isVerified: boolean('is_verified').notNull().default(false),
-  isActive: boolean('is_active').notNull().default(true),
-  lastLoginAt: timestamp('last_login_at'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => ({
-  emailIdx: index('users_email_idx').on(table.email),
-  userTypeIdx: index('users_user_type_idx').on(table.userType),
-}));
-
-export const accounts = pgTable(
-  'account',
-  {
-    userId: text('userId')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    type: text('type').$type<AdapterAccountType>().notNull(),
-    provider: text('provider').notNull(),
-    providerAccountId: text('providerAccountId').notNull(),
-    refresh_token: text('refresh_token'),
-    access_token: text('access_token'),
-    expires_at: integer('expires_at'),
-    token_type: text('token_type'),
-    scope: text('scope'),
-    id_token: text('id_token'),
-    session_state: text('session_state'),
-  },
-  (account) => ({
-    compoundKey: primaryKey({
-      columns: [account.provider, account.providerAccountId],
-    }),
-  })
-);
+  userType: text('user_type').notNull(),
+  isActive: boolean('is_active').default(true)
+}, (table) => [
+	index('users_email_idx').on(table.email),
+	index('users_user_type_idx').on(table.userType)
+]);
 
 export const sessions = pgTable('session', {
-  sessionToken: text('sessionToken').primaryKey(),
-  userId: text('userId')
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  expiresAt: timestamp('expires_at').notNull(),
+  token: text('token').notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .$onUpdate(() => new Date())
+    .notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  expires: timestamp('expires', { mode: 'date' }).notNull(),
+  impersonatedBy: text('impersonated_by')
 });
 
-export const verificationTokens = pgTable(
-  'verificationToken',
-  {
-    identifier: text('identifier').notNull(),
-    token: text('token').notNull(),
-    expires: timestamp('expires', { mode: 'date' }).notNull(),
-  },
-  (verificationToken) => ({
-    compositePk: primaryKey({
-      columns: [verificationToken.identifier, verificationToken.token],
-    }),
-  })
-);
+export const accounts = pgTable('account', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  accountId: text('accountId').notNull(),
+  providerId: text('providerId').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .$onUpdate(() => new Date())
+    .notNull()
+});
 
-export const authenticators = pgTable(
-  'authenticator',
-  {
-    credentialID: text('credentialID').notNull().unique(),
-    userId: text('userId')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    providerAccountId: text('providerAccountId').notNull(),
-    credentialPublicKey: text('credentialPublicKey').notNull(),
-    counter: integer('counter').notNull(),
-    credentialDeviceType: text('credentialDeviceType').notNull(),
-    credentialBackedUp: boolean('credentialBackedUp').notNull(),
-    transports: text('transports'),
-  },
-  (authenticator) => ({
-    compositePK: primaryKey({
-      columns: [authenticator.userId, authenticator.credentialID],
-    }),
-  })
-);
+export const verifications = pgTable('verification', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull()
+});
 
+export const twoFactor = pgTable('two_factor', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  secret: text('secret').notNull(),
+  backupCodes: text('backup_codes').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+});
+
+// Application-specific tables
 export const students = pgTable('students', {
-	id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+	id: text('id').primaryKey().default(sql`gen_random_uuid()`),
 	userId: text('user_id').references(() => users.id).notNull(),
 	firstName: text('first_name').notNull(),
 	lastName: text('last_name').notNull(),
@@ -118,7 +113,7 @@ export const students = pgTable('students', {
 });
 
 export const companies = pgTable('companies', {
-	id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+	id: text('id').primaryKey().default(sql`gen_random_uuid()`),
 	userId: text('user_id').references(() => users.id).notNull(),
 	name: text('name').notNull(),
 	industry: text('industry').notNull(),
@@ -136,7 +131,7 @@ export const companies = pgTable('companies', {
 });
 
 export const placements = pgTable('placements', {
-	id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+	id: text('id').primaryKey().default(sql`gen_random_uuid()`),
 	companyId: text('company_id').references(() => companies.id).notNull(),
 	title: text('title').notNull(),
 	department: text('department').notNull(),
@@ -159,7 +154,7 @@ export const placements = pgTable('placements', {
 });
 
 export const applications = pgTable('applications', {
-	id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+	id: text('id').primaryKey().default(sql`gen_random_uuid()`),
 	studentId: text('student_id').references(() => students.id).notNull(),
 	placementId: text('placement_id').references(() => placements.id).notNull(),
 	status: text('status', { 
@@ -182,7 +177,7 @@ export const applications = pgTable('applications', {
 });
 
 export const messages = pgTable('messages', {
-	id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+	id: text('id').primaryKey().default(sql`gen_random_uuid()`),
 	applicationId: text('application_id').references(() => applications.id).notNull(),
 	senderId: text('sender_id').references(() => users.id).notNull(),
 	content: text('content').notNull(),
@@ -191,7 +186,7 @@ export const messages = pgTable('messages', {
 });
 
 export const notifications = pgTable('notifications', {
-	id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+	id: text('id').primaryKey().default(sql`gen_random_uuid()`),
 	userId: text('user_id').references(() => users.id).notNull(),
 	title: text('title').notNull(),
 	message: text('message').notNull(),

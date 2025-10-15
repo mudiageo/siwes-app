@@ -1,61 +1,55 @@
 <script lang="ts">
 	import { login } from '../auth.remote';
-	import { signIn } from 'svelte-guardian/client'
-
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
+	import * as Alert from '$lib/components/ui/alert';
 	import Eye from '@lucide/svelte/icons/eye';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Mail from '@lucide/svelte/icons/mail';
 	import Lock from '@lucide/svelte/icons/lock';
-
-	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { validateEmail, validatePassword } from '$lib/utils/auth-errors';
 	
-	let loading = $state(false);
 	let showPassword = $state(false);
-	let email = $state("");
-	let password = $state("");
+	let error = $derived(login.result?.error);
+	let loading = $state(false);
+	let email = $state('');
+	let password = $state('');
+	let localError = $state('');
+	let showResetSuccess = $state(false);
 
-	let onsubmit = async (e) => {
-		e.preventDefault()
-		const result = await signIn("credentials", {
-			email,
-			password,
-			redirect:false,
-			callbackUrl: '/app'
-		});
-
-		let res = await result.json()
-
-		let error = "An error occurred, please try again."
-		if(result.error) {
-			error = 'Invalid email and/or password'
-		} else {
-
-		const url = new URL(res.url)
-console.log(res)
-		if(url.pathname === '/app') goto(`${url.pathname}/${res}`)
-		const errCode = url.searchParams.get('code')
-    
-    
-    switch (errCode) {
-		  case 'unverified_email':
-				error = 'Email must be verified';
-				break;
-			case 'account_not_found':
-			case 'user_not_found':
-				error = 'No account associated with this email';
-				break;
-			case 'invalid_credentials':
-				error = 'Invalid credentials';
-				break;
-		  }
+	// Check for password reset success
+	$effect(() => {
+		if (page.url.searchParams.get('reset') === 'success') {
+			showResetSuccess = true;
+			// Clear the query parameter after 5 seconds
+			setTimeout(() => {
+				showResetSuccess = false;
+			}, 5000);
 		}
-    
+	});
+
+	function validateForm(): boolean {
+		localError = '';
+		
+		const emailError = validateEmail(email);
+		if (emailError) {
+			localError = emailError.message;
+			return false;
+		}
+
+		const passwordError = validatePassword(password);
+		if (passwordError) {
+			localError = passwordError.message;
+			return false;
+		}
+
+		return true;
 	}
+
 </script>
 
 <Card class="p-6 shadow-lg">
@@ -65,13 +59,28 @@ console.log(res)
 			<p class="text-sm text-muted-foreground mt-1">Sign in to your account</p>
 		</div>
 
-		<form {onsubmit} class="space-y-4">
-		  	<input type="hidden" name="redirect" value={false} />
-			<input type="hidden" name="providerId" value="credentials" />
-			{#if login.result?.error}
-				<div class="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-					<p class="text-sm text-destructive">{login.result.error}</p>
-				</div>
+		<form {...login.enhance(async ({ submit}) => {
+			if (!validateForm()) {
+				return;
+			}
+			loading = true;
+			localError = '';
+			await submit().catch(e => { localError = e ; loading = false;});
+			loading = false;
+
+		})} class="space-y-4">
+			{#if showResetSuccess}
+				<Alert.Root class="border-green-500 bg-green-50 dark:bg-green-950">
+					<Alert.Description class="text-green-700 dark:text-green-300">
+						Password reset successful! You can now sign in with your new password.
+					</Alert.Description>
+				</Alert.Root>
+			{/if}
+
+			{#if error || localError}
+				<Alert.Root variant="destructive">
+					<Alert.Description>{error || localError}</Alert.Description>
+				</Alert.Root>
 			{/if}
   			
 			<div class="space-y-2">
@@ -86,7 +95,9 @@ console.log(res)
 						placeholder="your.email@university.edu.ng"
 						class="pl-10"
 						required
-						/>
+						disabled={loading}
+						oninput={() => localError = ''}
+					/>
 					</div>
 			</div>
 			
@@ -102,11 +113,14 @@ console.log(res)
 						placeholder="Enter your password"
 						class="pl-10 pr-10"
 						required
+						disabled={loading}
+						oninput={() => localError = ''}
 					/>
 					<button
 						type="button"
 						class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
 						onclick={() => showPassword = !showPassword}
+						disabled={loading}
 					>
 						{#if showPassword}
 							<EyeOff class="h-4 w-4" />
@@ -119,10 +133,13 @@ console.log(res)
 
 			<div class="flex items-center justify-between text-sm">
 				<label class="flex items-center space-x-2">
-					<input type="checkbox" class="rounded border-border" />
+					<input type="checkbox" class="rounded border-border" disabled={loading} />
 					<span class="text-muted-foreground">Remember me</span>
 				</label>
-				<a href="/auth/forgot-password" class="text-primary hover:underline">
+				<a 
+					href="/auth/forgot-password" 
+					class={["text-primary hover:underline", { 'opacity-50 pointer-events-none': loading }]}
+				>
 					Forgot password?
 				</a>
 			</div>
