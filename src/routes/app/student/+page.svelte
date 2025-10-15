@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { Card } from '$lib/components/ui/card';
+    import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
+    import { Progress } from '$lib/components/ui/progress';
+    import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import ProfileCompletion from '$lib/components/profile/ProfileCompletion.svelte';
@@ -18,9 +20,6 @@
 	import { getStudentDashboard } from '$lib/dashboard.remote';
 	import { getMatchingStats } from '$lib/matching.remote';
 
-	let { data } = $props();
-	
-	let user = $derived(data.user);
 	let dashboardData = $derived(getStudentDashboard());
 	let matchingStats = $derived(getMatchingStats());
 </script>
@@ -32,9 +31,26 @@
 <div class="space-y-6">
 	<!-- Welcome Section -->
 	{#await Promise.all([dashboardData, matchingStats])}
-		<div class="flex flex-col space-y-2">
-			<h1 class="text-2xl font-bold text-foreground">Loading...</h1>
-		</div>
+		<div class="p-6 space-y-6">
+            <!-- Loading skeleton -->
+            <div class="space-y-4">
+                <Skeleton class="h-8 w-64" />
+                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {#each Array(4) as _}
+                        <Card>
+                            <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <Skeleton class="h-4 w-24" />
+                                <Skeleton class="h-4 w-4 rounded-full" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton class="h-8 w-16 mb-2" />
+                                <Skeleton class="h-3 w-32" />
+                            </CardContent>
+                        </Card>
+                    {/each}
+                </div>
+            </div>
+        </div>
 	{:then [dashboard, matching]}
 		<div class="flex flex-col space-y-2">
 			<h1 class="text-2xl font-bold text-foreground">Good morning, {dashboard.student?.firstName}! 👋</h1>
@@ -210,8 +226,21 @@
 		</div>
 	</div>
 	{:catch error}
-		<div class="text-center py-12">
-			<p class="text-red-500">Error loading dashboard: {error.message}</p>
-		</div>
+		<Card class="border-destructive">
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2 text-destructive">
+                        <XCircle class="h-5 w-5" />
+                        Error Loading Dashboard
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p class="text-muted-foreground mb-4">
+                        {error.message || 'Failed to load dashboard data. Please try again.'}
+                    </p>
+                    <Button onclick={() => getStudentDashboard().refresh()} variant="outline">
+                        Retry
+                    </Button>
+                </CardContent>
+            </Card>
 	{/await}
 </div>
