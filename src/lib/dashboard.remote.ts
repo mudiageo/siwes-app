@@ -5,6 +5,7 @@ import { students, companies, applications, placements, notifications } from '$l
 import { eq, and, desc, count } from 'drizzle-orm';
 import { findMatches } from '$lib/server/matching.js';
 import { getProfile } from './profile.remote'
+
 // Get student dashboard data
 export const getStudentDashboard = query(async () => {
   const event = getRequestEvent();

@@ -5,7 +5,7 @@ import { db } from '$lib/server/db/index.js';
 import { students, placements, companies, applications } from '$lib/server/db/schema.js';
 import { calculateAIMatchScore, generateAICoverLetter, type MatchResult } from '$lib/server/ai-matching.js';
 import { eq, and, sql, desc } from 'drizzle-orm';
-import { auth } from '$lib/server/auth';
+import { getProfile } from './profile.remote';
 
 const FindMatchesSchema = v.optional(v.object({
 	limit: v.optional(v.number())
@@ -26,9 +26,7 @@ const CoverLetterSchema = v.object({
  */
 export const findMatches = query(FindMatchesSchema, async (options = {}) => {
 	const event = getRequestEvent();
-	const session = await auth.api.getSession({
-		headers: event.request.headers
-	});
+	const session = await event.locals.auth();
 	
 	if (!session?.user || session.user.userType !== 'student') {
 		throw new Error('Student access required');
@@ -170,10 +168,8 @@ export const getMatchingStats = query(async () => {
 		throw new Error('Student access required');
 	}
 
-	const student = session.user.profile;
-	if (!student) {
-		throw new Error('Student profile not found');
-	}
+	const { profile: student } = await getProfile();
+	if (!student) throw new Error('Student profile not found');
 
 	// Get available placements for calculating matches
 	const availablePlacements = await db
@@ -183,10 +179,10 @@ export const getMatchingStats = query(async () => {
 		})
 		.from(placements)
 		.innerJoin(companies, eq(placements.companyId, companies.userId))
-		.where(eq(placements.status, 'active'))
+		.where(eq(placements.isActive, true))
 		.orderBy(desc(placements.createdAt));
 
-	// Calculate match scores for statistics
+		// Calculate match scores for statistics
 	const matchResults: MatchResult[] = [];
 	
 	for (const { placement, company } of availablePlacements.slice(0, 50)) { // Limit for performance
@@ -202,23 +198,23 @@ export const getMatchingStats = query(async () => {
 	const totalPlacements = await db
 		.select({ count: sql<number>`count(*)` })
 		.from(placements)
-		.where(eq(placements.status, 'active'));
+		.where(eq(placements.isActive, true));
 
 	const excellentMatches = matchResults.filter(m => m.score.overall >= 0.8).length;
 	const goodMatches = matchResults.filter(m => m.score.overall >= 0.6 && m.score.overall < 0.8).length;
 	const fairMatches = matchResults.filter(m => m.score.overall >= 0.4 && m.score.overall < 0.6).length;
 
 	// Get student's applications
-	const studentApplications = await db.query.applications.findMany({
-		where: eq(applications.studentId, student.id),
-		with: {
-			placement: {
-				with: {
-					company: true
-				}
-			}
-		}
-	});
+	const studentApplications = await db
+		.select({
+			application: applications,
+			placement: placements,
+			company: companies
+		})
+		.from(applications)
+		.innerJoin(placements, eq(applications.placementId, placements.id))
+		.innerJoin(companies, eq(placements.companyId, companies.userId))
+		.where(eq(applications.studentId, student.id));
 
 	// Sort matches by score for top matches
 	const sortedMatches = matchResults.sort((a, b) => b.score.overall - a.score.overall);
