@@ -32,9 +32,9 @@ export const login = form(loginSchema, async (data, invalid) => {
             return;
         }
         
-        console.log('Login successful:', result);
         // Redirect based on user type if needed
-        // redirect(303, `/app/${result.user.userType}`)
+        redirect(303, `/app/${event.locals.user?.userType}`)
+       
         return {
             success: true
         };
@@ -147,11 +147,23 @@ export const register = form(registerSchema, async (data, invalid) => {
             },
             headers: event.request.headers
         });
+        
+        // Better Auth returns the user object on success, not an error property
+        if (!resultSignin || !(resultSignin as any).user) {
+            invalid('Invalid email or password');
+            return;
+        }
+        
+        // Redirect based on user type if needed
+        redirect(303, `/app/${event.locals.user?.userType}`)
+
 
         return {
             success: true
         };
-    } catch (error: any) {
+    } catch (error: unknown) {
+        if(isRedirect(error)) throw error;
+
         console.error('Registration error:', error);
         const authError = parseAuthError(error);
         invalid(authError.message);
