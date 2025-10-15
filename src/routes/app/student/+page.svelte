@@ -22,13 +22,7 @@
 	
 	let user = $derived(data.user);
 	let dashboardData = $derived(getStudentDashboard());
-	let matchingStats = $derived(getMatchingStats(data.user.id));
-	
-	let student = $derived(dashboardData?.student);
-	let stats = $derived({...dashboardData?.stats, ...matchingStats});
-	let recentMatches = $derived(matchingStats?.topMatches || []);
-	let recentApplications = $derived(dashboardData?.recentApplications || []);
-	let upcomingDeadlines = $derived(dashboardData?.upcomingDeadlines || []);
+	let matchingStats = $derived(getMatchingStats());
 </script>
 
 <svelte:head>
