@@ -9,5 +9,5 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	// Redirect to the shared applications page which handles both student and company views
-	 redirect(302, '/app/applications');
+	//  redirect(302, '/app/applications');
 };
