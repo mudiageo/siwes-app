@@ -87,21 +87,20 @@
 		</nav>
 
 		<!-- Footer -->
-		<div class="border-t border-border p-2">
-			<Button
-				variant="ghost"
-				class={cn(
-					"w-full justify-start text-muted-foreground hover:text-foreground",
-					collapsed ? "px-3" : "px-3"
-				)}
-			>
-				<Bell class="h-5 w-5 flex-shrink-0" />
-				{#if !collapsed}
-					<span class="ml-3">Notifications</span>
-				{/if}
-			</Button>
-			
-			<Button
+	<div class="border-t border-border p-2">
+		<Button
+			variant="ghost"
+			href="/app/student/notifications"
+			class={cn(
+				"w-full justify-start text-muted-foreground hover:text-foreground",
+				collapsed ? "px-3" : "px-3"
+			)}
+		>
+			<Bell class="h-5 w-5 flex-shrink-0" />
+			{#if !collapsed}
+				<span class="ml-3">Notifications</span>
+			{/if}
+		</Button>			<Button
 				variant="ghost"
 				class={cn(
 					"w-full justify-start text-muted-foreground hover:text-destructive",

@@ -5,7 +5,7 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async (event) => {
 	const session = await event.locals.auth();
 	if (!session?.user || session.user.userType !== 'student') {
-		throw redirect(302, '/auth/login');
+		redirect(302, '/auth/login');
 	}
 
 	// Get filter parameters
@@ -25,6 +25,6 @@ export const load: PageServerLoad = async (event) => {
 		};
 	} catch (error) {
 		console.error('Matches load error:', error);
-		throw redirect(302, '/auth/login');
+		// redirect(302, '/auth/login');
 	}
 };

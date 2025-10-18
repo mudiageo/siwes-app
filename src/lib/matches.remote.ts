@@ -7,6 +7,7 @@ import { applications, placements, companies } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { calculateMatchScore } from '$lib/server/matching.js';
 import { notifyNewApplication } from '$lib/server/notifications.js';
+import { getProfile } from './profile.remote'
 
 const FiltersSchema = v.object({
   industry: v.optional(v.string()),
@@ -24,7 +25,7 @@ export const getMatches = query(FiltersSchema, async (filters = {}) => {
     throw new Error('Student access required');
   }
 
-  const student = session.user.profile;
+  const student = await getProfile();
   if (!student) throw new Error('Student profile not found');
 
   const matches = await findMatches(student.id);
@@ -74,7 +75,7 @@ export const applyToPlacement = command(v.string(), async (placementId) => {
     throw new Error('Student access required');
   }
 
-  const student = session.user.profile;
+  const student = await getProfile();
   if (!student) throw new Error('Student profile not found');
 
   // Get placement details

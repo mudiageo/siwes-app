@@ -4,6 +4,7 @@ import { db } from '$lib/server/db/index.js';
 import { notifications } from '$lib/server/db/schema.js';
 import { eq, and, desc, count } from 'drizzle-orm';
 import * as v from 'valibot';
+
 // Get user notifications
 export const getNotifications = query(async () => {
   const event = getRequestEvent();
@@ -20,7 +21,7 @@ export const getNotifications = query(async () => {
     .orderBy(desc(notifications.createdAt))
     .limit(50);
 
-  return { notifications: userNotifications };
+  return userNotifications;
 });
 
 // Get unread notification count
@@ -56,7 +57,8 @@ export const markAllAsRead = command(async () => {
     .update(notifications)
     .set({ isRead: true })
     .where(eq(notifications.userId, session.user.id));
-
+  
+    await getNotifications().refresh();
   return { success: true };
 });
 
@@ -72,7 +74,8 @@ export const markAsRead = command(v.string(), async (notificationId: string) => 
     .update(notifications)
     .set({ isRead: true })
     .where(eq(notifications.id, notificationId));
-
+  
+    await getNotifications().refresh();
   return { success: true };
 });
 
@@ -87,6 +90,7 @@ export const deleteNotification = command(v.string(), async (notificationId : st
   await db
     .delete(notifications)
     .where(eq(notifications.id, notificationId));
-
+  
+  await getNotifications().refresh();
   return { success: true };
 });

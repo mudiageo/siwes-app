@@ -6,7 +6,7 @@ import { calculateAIMatchScore } from '$lib/server/ai-matching';
 import { createNotification, notifyNewApplication } from '$lib/server/notifications.js';
 import { auth } from '$lib/server/auth';
 import type { RequestEvent } from '@sveltejs/kit';
-
+import { getProfile } from '../profile.remote.ts'
 // Authentication helpers
 export async function getUser(event: RequestEvent) {
 	const session = await event.locals.auth();
@@ -146,7 +146,7 @@ export async function getDashboardData(event: RequestEvent) {
 // Matches functions
 export async function getMatches(event: RequestEvent, filters: any = {}) {
 	const user = await requireStudent(event);
-	const student = user.profile;
+	const student = await getProfile();
 	if (!student) throw new Error('Student profile not found');
 
 	const matches = await findMatches(student.id);
