@@ -4,6 +4,7 @@ import * as v from 'valibot';
 import { db } from '$lib/server/db/index.js';
 import { placements, companies, applications, students } from '$lib/server/db/schema.js';
 import { eq, desc, and } from 'drizzle-orm';
+import { getProfile } from './profile.remote'
 
 // Get placement details
 export const getPlacement = query(v.string(), async (placementId) => {
@@ -32,7 +33,7 @@ export const getCompanyPlacements = query(async () => {
     throw new Error('Company access required');
   }
 
-  const company = session.user.profile;
+  const company = await getProfile();
   if (!company) throw new Error('Company profile not found');
 
   const companyPlacements = await db
@@ -53,7 +54,7 @@ export const createPlacement = form(async (data) => {
     throw new Error('Company access required');
   }
 
-  const company = session.user.profile;
+  const company = await getProfile();
   if (!company) throw new Error('Company profile not found');
 
   const title = data.get('title') as string;

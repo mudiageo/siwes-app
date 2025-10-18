@@ -6,6 +6,7 @@ import { applications, placements, companies, students } from '$lib/server/db/sc
 import { eq } from 'drizzle-orm';
 import { notifyApplicationStatusChange, notifyNewApplication } from '$lib/server/notifications.js';
 import { calculateAIMatchScore } from '$lib/server/ai-matching';
+import { getProfile } from './profile.remote'
 
 // Get user applications
 export const getApplications = query(async () => {
@@ -19,7 +20,7 @@ export const getApplications = query(async () => {
   let userApplications;
 
   if (session.user.userType === 'student') {
-    const student = session.user.profile;
+    const student = await getProfile();
     if (!student) throw new Error('Student profile not found');
 
     userApplications = await db
@@ -31,9 +32,9 @@ export const getApplications = query(async () => {
       .from(applications)
       .innerJoin(placements, eq(applications.placementId, placements.id))
       .innerJoin(companies, eq(placements.companyId, companies.id))
-      .where(eq(applications.studentId, student.id));
+      .where(eq(applications.studentId, student.user.id));
   } else {
-    const company = session.user.profile;
+    const company = await getProfile();
     if (!company) throw new Error('Company profile not found');
 
     userApplications = await db
@@ -45,10 +46,10 @@ export const getApplications = query(async () => {
       .from(applications)
       .innerJoin(placements, eq(applications.placementId, placements.id))
       .innerJoin(students, eq(applications.studentId, students.id))
-      .where(eq(placements.companyId, company.id));
+      .where(eq(placements.companyId, company.user.id));
   }
 
-  return { applications: userApplications };
+  return userApplications;
 });
 
 // Update application status (company only)
@@ -110,7 +111,7 @@ export const applyForPlacement = command(v.object({ placementId: v.string(), cov
       throw new Error('student access required');
     }
     
-	const student = user.profile;
+	const student = await getProfile();
 	if (!student) throw new Error('Student profile not found');
 
 	// Get placement details
@@ -128,7 +129,7 @@ export const applyForPlacement = command(v.object({ placementId: v.string(), cov
 		.select()
 		.from(applications)
 		.where(and(
-			eq(applications.studentId, student.id),
+			eq(applications.studentId, student.user.id),
 			eq(applications.placementId, placementId)
 		));
 

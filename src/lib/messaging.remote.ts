@@ -4,6 +4,7 @@ import * as v from 'valibot';
 import { db } from '$lib/server/db/index.js';
 import { messages, applications, placements, companies, students, users } from '$lib/server/db/schema.js';
 import { eq, desc, and, or } from 'drizzle-orm';
+import { getProfile } from './profile.remote'
 
 // Get messages for an application
 export const getApplicationMessages = query(v.string(), async (applicationId: string) => {
@@ -139,7 +140,7 @@ export const getConversations = query(async () => {
   let conversations;
 
   if (session.user.userType === 'student') {
-    const student = session.user.profile;
+    const student = await getProfile();
     if (!student) throw new Error('Student profile not found');
 
     // Get applications with latest messages
@@ -164,7 +165,7 @@ export const getConversations = query(async () => {
       .orderBy(desc(messages.sentAt));
 
   } else {
-    const company = session.user.profile;
+    const company = await getProfile();
     if (!company) throw new Error('Company profile not found');
 
     // Get applications to company placements with latest messages

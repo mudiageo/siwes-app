@@ -15,8 +15,6 @@
 	import { findMatches, getSkillRecommendations } from '$lib/matching.remote';
 	import { getProfile } from '$lib/profile.remote';
 
-	let { data } = $props();
-
 	let searchQuery = $state('');
 	let selectedIndustry = $state('');
 	let selectedLocation = $state('');

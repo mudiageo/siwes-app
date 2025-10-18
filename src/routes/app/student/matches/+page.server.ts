@@ -1,5 +1,4 @@
 import { redirect } from '@sveltejs/kit';
-import { getMatches } from '$lib/server/remote-functions.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -16,15 +15,9 @@ export const load: PageServerLoad = async (event) => {
 		search: event.url.searchParams.get('search') || ''
 	};
 
-	try {
-		const result = await getMatches(event, filters);
 		return {
 			...result,
 			filters,
 			user: session.user
 		};
-	} catch (error) {
-		console.error('Matches load error:', error);
-		// redirect(302, '/auth/login');
-	}
 };

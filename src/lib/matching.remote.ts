@@ -32,7 +32,7 @@ export const findMatches = query(FindMatchesSchema, async (options = {}) => {
 		throw new Error('Student access required');
 	}
 
-	const student = session.user.profile;
+	const student = await getProfile();
 	if (!student) {
 		throw new Error('Student profile not found');
 	}
@@ -83,7 +83,7 @@ export const getMatchAnalysis = query(MatchAnalysisSchema, async ({ placementId 
 		throw new Error('Student access required');
 	}
 
-	const student = session.user.profile;
+	const student = await getProfile();
 	if (!student) {
 		throw new Error('Student profile not found');
 	}
@@ -134,7 +134,7 @@ export const generateCoverLetter = command(CoverLetterSchema, async ({ placement
 		throw new Error('Student access required');
 	}
 
-	const student = session.user.profile;
+	const student = await getProfile();
 	if (!student) {
 		throw new Error('Student profile not found');
 	}
@@ -243,7 +243,7 @@ export const getSkillRecommendations = query(async () => {
 		throw new Error('Student access required');
 	}
 
-	const student = session.user.profile;
+	const student = await getProfile();
 	if (!student) {
 		throw new Error('Student profile not found');
 	}

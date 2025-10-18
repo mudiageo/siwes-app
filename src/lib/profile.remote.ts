@@ -43,7 +43,7 @@ export const updateStudentProfile = form(async (data) => {
     throw new Error('Student access required');
   }
 
-  const student = session.user.profile;
+  const student = await getProfile();
   if (!student) throw new Error('Student profile not found');
 
   const firstName = data.get('firstName') as string;
@@ -108,7 +108,7 @@ export const updateCompanyProfile = form(async (data) => {
     throw new Error('Company access required');
   }
 
-  const company = session.user.profile;
+  const company = await getProfile();
   if (!company) throw new Error('Company profile not found');
 
   const name = data.get('name') as string;
@@ -154,7 +154,7 @@ export const uploadResume = command(
       throw new Error('Student access required');
     }
 
-    const student = session.user.profile;
+    const student = await getProfile();
     if (!student) throw new Error('Student profile not found');
 
     // Update student profile with resume and extracted skills
