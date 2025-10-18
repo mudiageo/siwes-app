@@ -1,6 +1,4 @@
-<!-- src/routes/app/student/profile/+page.svelte -->
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -25,10 +23,9 @@
 	
 	import { getProfile, updateStudentProfile, uploadResume } from '$lib/profile.remote.js';
 
-	let { data } = $props();
-	
-	let profile = $state(data.profile);
-	let user = $state(data.user);
+	const profileQuery = $derived(await getProfile());
+	let profile = $derived(profileQuery.profile);
+	let user = $derived(profileQuery.user);
 	
 	// Form state
 	let isEditing = $state(false);
@@ -83,11 +80,11 @@
 	async function handleSave() {
 		isSaving = true;
 		try {
-			const result = await updateStudentProfile(new FormData());
+			const result = await updateStudentProfile();
 			if (result.success) {
 				// Refresh profile data
-				const updatedData = await getProfile();
-				profile = updatedData.profile;
+				// const updatedData = await getProfile();
+				// profile = updatedData.profile;
 				isEditing = false;
 			}
 		} catch (error) {
@@ -136,8 +133,8 @@
 			});
 
 			// Refresh profile
-			const updatedData = await getProfile();
-			profile = updatedData.profile;
+			// const updatedData = await getProfile();
+			// profile = updatedData.profile;
 			
 		} catch (error) {
 			console.error('Failed to upload resume:', error);

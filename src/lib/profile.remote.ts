@@ -95,6 +95,8 @@ export const updateStudentProfile = form(async (data) => {
       updatedAt: new Date()
     })
     .where(eq(students.id, student.id));
+    
+    getProfile().refresh;
 
   return { success: true, profileCompleteness };
 });
@@ -136,8 +138,9 @@ export const updateCompanyProfile = form(async (data) => {
       updatedAt: new Date()
     })
     .where(eq(companies.id, company.id));
+    getProfile().refresh;
 
-  return { success: true };
+    return { success: true };
 });
 
 // Upload CV/Resume
@@ -169,8 +172,9 @@ export const uploadResume = command(
         updatedAt: new Date()
       })
       .where(eq(students.id, student.id));
+    getProfile().refresh;
 
-    return { success: true, extractedSkills: extractedSkills.length };
+      return { success: true, extractedSkills: extractedSkills.length };
   }
 );
 
