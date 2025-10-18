@@ -13,6 +13,7 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import { industries, nigerianStates } from '$lib/services/sample-data.js';
 	import { findMatches, getSkillRecommendations } from '$lib/matching.remote';
+	import { getProfile } from '$lib/profile.remote';
 
 	let { data } = $props();
 
@@ -24,8 +25,10 @@
 	let showFilters = $state(false);
 	let refreshing = $state(false);
 
-	let matchesQuery = $derived(findMatches(data.user.id));
-	let skillsQuery = $derived(getSkillRecommendations(data.user.id));
+	let profileData = $derived(await getProfile());
+
+	let matchesQuery = $derived(await findMatches(profileData.user.id));
+	let skillsQuery = $derived(await getSkillRecommendations(profileData.user.id));
 
 	function filterMatches(matches, search, industry, location, duration) {
 		if (!matches) return [];
