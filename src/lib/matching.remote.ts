@@ -47,7 +47,7 @@ export const findMatches = query(FindMatchesSchema, async (options = {}) => {
 		})
 		.from(placements)
 		.innerJoin(companies, eq(placements.companyId, companies.userId))
-		.where(eq(placements.status, 'active'))
+		.where(eq(placements.isActive, true))
 		.orderBy(desc(placements.createdAt));
 
 	// Calculate match scores for each placement
@@ -250,7 +250,7 @@ export const getSkillRecommendations = query(async () => {
 
 	// Get top skills from recent placements in student's department
 	const departmentPlacements = await db.query.placements.findMany({
-		where: eq(placements.department, student.department),
+		where: eq(placements.department, student.profile.department),
 		orderBy: desc(placements.createdAt),
 		limit: 100
 	});
@@ -267,7 +267,7 @@ export const getSkillRecommendations = query(async () => {
 	});
 
 	// Filter out skills student already has
-	const currentSkills = (student.skills || []).map(s => s.toLowerCase());
+	const currentSkills = (student.profile.skills || []).map(s => s.toLowerCase());
 	const recommendedSkills = Object.entries(skillCounts)
 		.filter(([skill]) => !currentSkills.includes(skill.toLowerCase()))
 		.sort(([,a], [,b]) => b - a)
@@ -276,7 +276,7 @@ export const getSkillRecommendations = query(async () => {
 			skill,
 			frequency: count,
 			category: categorizeSkill(skill),
-			priority: calculateSkillPriority(skill, student.department)
+			priority: calculateSkillPriority(skill, student.profile.department)
 		}));
 
 	return {

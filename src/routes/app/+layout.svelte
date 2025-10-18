@@ -40,13 +40,13 @@
 	<!-- Desktop Layout -->
 	<div class="hidden lg:flex h-screen bg-background">
 		<!-- Sidebar -->
-		<div class="w-64 border-r bg-card">
+		<div class="border-r bg-card">
 			{#if userType === 'student'}
-				<StudentSidebar {user} />
+				<StudentSidebar />
 			{:else if userType === 'company'}
-				<CompanySidebar {user} />
+				<CompanySidebar />
 			{:else}
-				<Sidebar {user} />
+				<Sidebar />
 			{/if}
 		</div>
 		
@@ -55,11 +55,11 @@
 			<!-- Header -->
 			<div class="border-b bg-card">
 				{#if userType === 'student'}
-					<StudentHeader {user} />
+					<StudentHeader />
 				{:else if userType === 'company'}
-					<CompanyHeader {user} />
+					<CompanyHeader />
 				{:else}
-					<Header {user} />
+					<Header />
 				{/if}
 			</div>
 			
@@ -75,11 +75,11 @@
 		<!-- Mobile Header -->
 		<div class="border-b bg-card">
 			{#if userType === 'student'}
-				<StudentHeader {user} />
+				<StudentHeader  />
 			{:else if userType === 'company'}
-				<CompanyHeader {user} />
+				<CompanyHeader />
 			{:else}
-				<Header {user} />
+				<Header />
 			{/if}
 		</div>
 		

@@ -16,8 +16,6 @@ export const load: PageServerLoad = async (event) => {
 	};
 
 		return {
-			...result,
 			filters,
-			user: session.user
 		};
 };

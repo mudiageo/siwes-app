@@ -25,8 +25,8 @@
 
 	let profileData = $derived(await getProfile());
 
-	let matchesQuery = $derived(await findMatches(profileData.user.id));
-	let skillsQuery = $derived(await getSkillRecommendations(profileData.user.id));
+	let matchesQuery = $derived(await findMatches());
+	let skillsQuery = $derived(await getSkillRecommendations());
 
 	function filterMatches(matches, search, industry, location, duration) {
 		if (!matches) return [];
