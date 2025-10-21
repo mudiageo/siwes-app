@@ -10,9 +10,10 @@
 		skills?: string[];
 		placeholder?: string;
 		suggestions?: string[];
+		field: any;
 	}
 
-	let { skills = $bindable([]), placeholder = "Add skills...", suggestions = commonSkills }: Props = $props();
+	let { skills = $bindable([]), placeholder = "Add skills...", suggestions = commonSkills, field, ...restProps }: Props = $props();
 
 	let inputValue = $state('');
 	let showSuggestions = $state(false);
@@ -25,7 +26,7 @@
 	function addSkill() {
 		const trimmed = inputValue.trim();
 		if (trimmed && !skills.includes(trimmed)) {
-			skills = [...skills, trimmed];
+			skills.push(trimmed);
 			inputValue = '';
 			showSuggestions = false;
 		}
@@ -36,7 +37,7 @@
 	}
 
 	function addSuggestion(skill: string) {
-		skills = [...skills, skill];
+		skills.push(skill);
 		inputValue = '';
 		showSuggestions = false;
 	}
@@ -58,15 +59,19 @@
 			<Input
 				bind:value={inputValue}
 				{placeholder}
-				on:input={() => showSuggestions = inputValue.length > 0}
-				on:focus={() => showSuggestions = inputValue.length > 0}
-				on:keydown={handleKeydown}
+				oninput={() => showSuggestions = inputValue.length > 0}
+				onfocus={() => showSuggestions = inputValue.length > 0}
+				onkeydown={handleKeydown}
+				{...restProps}
 				class="flex-1"
 			/>
+				{#each skills as skill}
+      		<input {...field.as("checkbox", skill)} class="hidden"/>
+      	{/each}
 			<Button 
 				type="button" 
 				size="sm"
-				on:click={addSkill}
+				onclick={addSkill}
 				disabled={!inputValue.trim()}
 			>
 				<Plus class="h-4 w-4" />

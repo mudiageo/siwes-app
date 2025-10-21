@@ -39,17 +39,34 @@ export const getCompanyPlacements = query(async () => {
   const companyPlacements = await db
     .select()
     .from(placements)
-    .where(eq(placements.companyId, company.id))
+    .where(eq(placements.companyId, company.profile.id))
     .orderBy(desc(placements.createdAt));
 
-  return { placements: companyPlacements };
+  return companyPlacements;
+});
+
+const createPlacementSchema = v.object({
+  title: v.string(),
+  department: v.string(),
+  description: v.string(),
+  requirements: v.string(),
+  duration: v.number(),
+  slots: v.number(),
+  salaryRange: v.string(),
+  location: v.string(),
+  isRemote: v.optional(v.boolean(), false),
+  applicationDeadline: v.pipe(v.string(), v.transform(str => new Date(str))),
+  startDate: v.pipe(v.string(), v.transform(str => new Date(str))),
+  endDate: v.pipe(v.string(), v.transform(str => new Date(str))),
+  requiredSkills: v.optional(v.array(v.string()), []),
+  skillsToLearn: v.optional(v.array(v.string()), [])
 });
 
 // Create new placement
-export const createPlacement = form(async (data) => {
+export const createPlacement = form(createPlacementSchema, async (data) => {
   const event = getRequestEvent();
   const session = await event.locals.auth();
-  
+
   if (!session?.user || session.user.userType !== 'company') {
     throw new Error('Company access required');
   }
@@ -57,47 +74,47 @@ export const createPlacement = form(async (data) => {
   const company = await getProfile();
   if (!company) throw new Error('Company profile not found');
 
-  const title = data.get('title') as string;
-  const department = data.get('department') as string;
-  const description = data.get('description') as string;
-  const requirements = data.get('requirements') as string;
-  const duration = parseInt(data.get('duration') as string);
-  const slots = parseInt(data.get('slots') as string);
-  const salaryRange = data.get('salaryRange') as string;
-  const location = data.get('location') as string;
-  const isRemote = data.get('isRemote') === 'true';
-  const applicationDeadline = new Date(data.get('applicationDeadline') as string);
-  const startDate = new Date(data.get('startDate') as string);
-  const endDate = new Date(data.get('endDate') as string);
-
-  // Parse skills
-  const requiredSkills = JSON.parse(data.get('requiredSkills') as string || '[]');
-  const skillsToLearn = JSON.parse(data.get('skillsToLearn') as string || '[]');
-
   const [placement] = await db.insert(placements).values({
-    companyId: company.id,
-    title,
-    department,
-    description,
-    requirements,
-    duration,
-    slots,
-    salaryRange,
-    location,
-    isRemote,
-    applicationDeadline,
-    startDate,
-    endDate,
-    requiredSkills,
-    skillsToLearn,
+    companyId: company.profile.id,
+    title: data.title,
+    department: data.department,
+    description: data.description,
+    requirements: data.requirements,
+    duration: data.duration,
+    slots: data.slots,
+    salaryRange: data.salaryRange,
+    location: data.location,
+    isRemote: data.isRemote,
+    applicationDeadline: data.applicationDeadline,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    requiredSkills: data.requiredSkills,
+    skillsToLearn: data.skillsToLearn,
     isActive: true
   }).returning();
 
   return { success: true, placementId: placement.id };
 });
 
+
+const updatePlacementSchema = v.object({
+  placementId: v.string(),
+  title: v.string(),
+  department: v.string(),
+  description: v.string(),
+  requirements: v.string(),
+  duration: v.number(),
+  slots: v.number(),
+  salaryRange: v.string(),
+  location: v.string(),
+  isRemote: v.boolean(),
+  isActive: v.boolean(),
+  requiredSkills: v.array(v.string()),
+  skillsToLearn: v.array(v.string())
+});
+
 // Update placement
-export const updatePlacement = form(async (data) => {
+export const updatePlacement = form(updatePlacementSchema, async (data) => {
   const event = getRequestEvent();
   const session = await event.locals.auth();
   
@@ -105,42 +122,28 @@ export const updatePlacement = form(async (data) => {
     throw new Error('Company access required');
   }
 
-  const placementId = data.get('placementId') as string;
-  const title = data.get('title') as string;
-  const department = data.get('department') as string;
-  const description = data.get('description') as string;
-  const requirements = data.get('requirements') as string;
-  const duration = parseInt(data.get('duration') as string);
-  const slots = parseInt(data.get('slots') as string);
-  const salaryRange = data.get('salaryRange') as string;
-  const location = data.get('location') as string;
-  const isRemote = data.get('isRemote') === 'true';
-  const isActive = data.get('isActive') === 'true';
-
-  const requiredSkills = JSON.parse(data.get('requiredSkills') as string || '[]');
-  const skillsToLearn = JSON.parse(data.get('skillsToLearn') as string || '[]');
-
   await db
     .update(placements)
     .set({
-      title,
-      department,
-      description,
-      requirements,
-      duration,
-      slots,
-      salaryRange,
-      location,
-      isRemote,
-      isActive,
-      requiredSkills,
-      skillsToLearn,
+      title: data.title,
+      department: data.department,
+      description: data.description,
+      requirements: data.requirements,
+      duration: data.duration,
+      slots: data.slots,
+      salaryRange: data.salaryRange,
+      location: data.location,
+      isRemote: data.isRemote,
+      isActive: data.isActive,
+      requiredSkills: data.requiredSkills,
+      skillsToLearn: data.skillsToLearn,
       updatedAt: new Date()
     })
-    .where(eq(placements.id, placementId));
+    .where(eq(placements.id, data.placementId));
 
   return { success: true };
 });
+
 
 // Toggle placement active status
 export const togglePlacementStatus = command(
