@@ -27,33 +27,14 @@
 	
 	import { getCompanyPlacements, createPlacement, updatePlacement, togglePlacementStatus } from '$lib/placements.remote.js';
 
-	let { data } = $props();
-	
-	let placements = $state(data.placements || []);
+	let placements = $derived(await getCompanyPlacements());
 	let searchTerm = $state('');
 	let filterStatus = $state('all');
 	let showCreateDialog = $state(false);
 	let showEditDialog = $state(false);
 	let selectedPlacement = $state(null);
 	let isSaving = $state(false);
-	
-	// New placement form
-	let newPlacement = $state({
-		title: '',
-		department: '',
-		description: '',
-		requirements: '',
-		duration: 24,
-		slots: 1,
-		salaryRange: '',
-		location: '',
-		isRemote: false,
-		applicationDeadline: '',
-		startDate: '',
-		endDate: '',
-		requiredSkills: [],
-		skillsToLearn: []
-	});
+
 
 	const departments = [
 		'Software Engineering', 'Data Science', 'Cybersecurity', 'IT Support',
@@ -77,35 +58,15 @@
 		return matchesSearch;
 	}));
 
-	async function handleCreatePlacement(e) {
-        e.preventDefault()
-		isSaving = true;
-		try {
-			const result = await createPlacement(new FormData());
-			if (result.success) {
-				// Refresh placements
-				const updatedData = await getCompanyPlacements();
-				placements = updatedData.placements;
-				showCreateDialog = false;
-				resetForm();
-			}
-		} catch (error) {
-			console.error('Failed to create placement:', error);
-		} finally {
-			isSaving = false;
-		}
-	}
-
-	async function handleUpdatePlacement() {
+	async function handleUpdatePlacement({ submit }) {
 		if (!selectedPlacement) return;
 		
 		isSaving = true;
 		try {
-			const result = await updatePlacement(new FormData());
-			if (result.success) {
+		   await submit();
+			if (createPlacement.result.success) {
 				// Refresh placements
-				const updatedData = await getCompanyPlacements();
-				placements = updatedData.placements;
+				getCompanyPlacements().refresh();
 				showEditDialog = false;
 				selectedPlacement = null;
 			}
@@ -118,34 +79,14 @@
 
 	async function toggleStatus(placementId: string, isActive: boolean) {
 		try {
-			await togglePlacementStatus({ placementId, isActive: !isActive });
-			// Update local state
-			placements = placements.map(p => 
-				p.id === placementId ? { ...p, isActive: !isActive } : p
-			);
+			await togglePlacementStatus({ placementId, isActive: !isActive }).updates(getCompanyPlacements().withOverride(placements.map(p => 
+				p.id === placementId ? { ...p, isActive: !isActive } : p)
+			));
 		} catch (error) {
 			console.error('Failed to toggle status:', error);
 		}
 	}
 
-	function resetForm() {
-		newPlacement = {
-			title: '',
-			department: '',
-			description: '',
-			requirements: '',
-			duration: 24,
-			slots: 1,
-			salaryRange: '',
-			location: '',
-			isRemote: false,
-			applicationDeadline: '',
-			startDate: '',
-			endDate: '',
-			requiredSkills: [],
-			skillsToLearn: []
-		};
-	}
 
 	function editPlacement(placement) {
 		selectedPlacement = { ...placement };
@@ -175,6 +116,7 @@
 	function formatDate(dateString) {
 		return new Date(dateString).toLocaleDateString();
 	}
+
 </script>
 
 <svelte:head>
@@ -192,11 +134,9 @@
 		</div>
 		
 		<Dialog bind:open={showCreateDialog}>
-			<DialogTrigger asChild>
-				<Button>
+			<DialogTrigger>
 					<Plus class="h-4 w-4 mr-2" />
 					Create Placement
-				</Button>
 			</DialogTrigger>
 			<DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
@@ -205,15 +145,34 @@
 						Add a new SIWES placement opportunity for students
 					</DialogDescription>
 				</DialogHeader>
-				
-				<form onsubmit={handleCreatePlacement} class="space-y-6">
+				{#each createPlacement.fields.allIssues() as issue}
+        	<p>{issue.message}</p>
+        {/each}
+				<form {...createPlacement.enhance(	async ({ submit, form }) => {
+		isSaving = true;
+		try {
+			await submit();
+			if (createPlacement.result?.success) {
+				// Refresh placements
+				getCompanyPlacements().refresh();
+				showCreateDialog = false;
+				form.reset();
+			}
+		} catch (error) {
+			console.error('Failed to create placement:', error);
+		} finally {
+			isSaving = false;
+		}
+	}
+	)
+	} class="space-y-6">
 					<!-- Basic Information -->
 					<div class="space-y-4">
 						<div class="space-y-2">
 							<Label for="title">Position Title</Label>
 							<Input
+							{...createPlacement.fields.title.as('text')}
 								id="title"
-								bind:value={newPlacement.title}
 								placeholder="e.g. Software Development Intern"
 								required
 							/>
@@ -222,9 +181,9 @@
 						<div class="grid grid-cols-2 gap-4">
 							<div class="space-y-2">
 								<Label for="department">Department</Label>
-								<Select bind:value={newPlacement.department}>
+								<Select {...createPlacement.fields.department.as('select')}>
 									<SelectTrigger>
-										{newPlacement.department || "Select department"}
+										{createPlacement.fields.department.value() || "Select department"}
 									</SelectTrigger>
 									<SelectContent>
 										{#each departments as dept}
@@ -236,9 +195,9 @@
 
 							<div class="space-y-2">
 								<Label for="location">Location</Label>
-								<Select bind:value={newPlacement.location}>
+								<Select {...createPlacement.fields.location.as('select')}>
 									<SelectTrigger>
-										{newPlacement.location || "Select location"}
+										{createPlacement.fields.location.value() || "Select location"}
 									</SelectTrigger>
 									<SelectContent>
 										{#each locations as location}
@@ -250,7 +209,7 @@
 						</div>
 
 						<div class="flex items-center space-x-2">
-							<Switch bind:checked={newPlacement.isRemote} />
+							<Switch {...createPlacement.fields.isRemote.as('checkbox', createPlacement.fields.isRemote.value())} />
 							<Label>Remote work available</Label>
 						</div>
 					</div>
@@ -261,7 +220,8 @@
 							<Label for="description">Job Description</Label>
 							<Textarea
 								id="description"
-								bind:value={newPlacement.description}
+								{...createPlacement.fields.description.as('text')}
+								bin
 								placeholder="Describe the role, responsibilities, and what the student will learn..."
 								rows="4"
 								required
@@ -272,7 +232,7 @@
 							<Label for="requirements">Requirements</Label>
 							<Textarea
 								id="requirements"
-								bind:value={newPlacement.requirements}
+							{...createPlacement.fields.requirements.as('text')}
 								placeholder="Education level, academic requirements, any prerequisites..."
 								rows="3"
 								required
@@ -285,15 +245,15 @@
 						<div class="space-y-2">
 							<Label>Required Skills</Label>
 							<SkillsInput
-								bind:value={newPlacement.requiredSkills}
 								placeholder="Add required skills..."
+								field={createPlacement.fields.requiredSkill}
 							/>
 						</div>
 
 						<div class="space-y-2">
 							<Label>Skills Students Will Learn</Label>
 							<SkillsInput
-								bind:value={newPlacement.skillsToLearn}
+							  field={createPlacement.fields.skillsToLearn}
 								placeholder="Add skills students will learn..."
 							/>
 						</div>
@@ -305,8 +265,7 @@
 							<Label for="duration">Duration (weeks)</Label>
 							<Input
 								id="duration"
-								type="number"
-								bind:value={newPlacement.duration}
+							{...createPlacement.fields.duration.as('number')}
 								min="12"
 								max="52"
 								required
@@ -317,8 +276,7 @@
 							<Label for="slots">Available Slots</Label>
 							<Input
 								id="slots"
-								type="number"
-								bind:value={newPlacement.slots}
+							{...createPlacement.fields.slots.as('number')}
 								min="1"
 								required
 							/>
@@ -329,7 +287,7 @@
 						<Label for="salaryRange">Salary/Stipend (optional)</Label>
 						<Input
 							id="salaryRange"
-							bind:value={newPlacement.salaryRange}
+							{...createPlacement.fields.salaryRange.as('text')}
 							placeholder="e.g. ₦50,000 - ₦80,000/month"
 						/>
 					</div>
@@ -340,8 +298,7 @@
 							<Label for="applicationDeadline">Application Deadline</Label>
 							<Input
 								id="applicationDeadline"
-								type="date"
-								bind:value={newPlacement.applicationDeadline}
+								{...createPlacement.fields.applicationDeadline.as('date')}
 								required
 							/>
 						</div>
@@ -350,8 +307,7 @@
 							<Label for="startDate">Start Date</Label>
 							<Input
 								id="startDate"
-								type="date"
-								bind:value={newPlacement.startDate}
+							{...createPlacement.fields.startDate.as('date')}
 								required
 							/>
 						</div>
@@ -360,8 +316,7 @@
 							<Label for="endDate">End Date</Label>
 							<Input
 								id="endDate"
-								type="date"
-								bind:value={newPlacement.endDate}
+							{...createPlacement.fields.endDate.as('date')}
 								required
 							/>
 						</div>
