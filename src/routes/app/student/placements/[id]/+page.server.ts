@@ -9,5 +9,5 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	}
 
 	// Redirect to the shared placements detail page
-	redirect(302, `/app/placements/${params.id}`);
+	// redirect(302, `/app/placements/${params.id}`);
 };
