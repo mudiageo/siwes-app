@@ -181,7 +181,7 @@
 						<div class="grid grid-cols-2 gap-4">
 							<div class="space-y-2">
 								<Label for="department">Department</Label>
-								<Select {...createPlacement.fields.department.as('select')}>
+								<Select type="single" {...createPlacement.fields.department.as('select')}>
 									<SelectTrigger>
 										{createPlacement.fields.department.value() || "Select department"}
 									</SelectTrigger>
@@ -195,7 +195,7 @@
 
 							<div class="space-y-2">
 								<Label for="location">Location</Label>
-								<Select {...createPlacement.fields.location.as('select')}>
+								<Select type="single" {...createPlacement.fields.location.as('select')}>
 									<SelectTrigger>
 										{createPlacement.fields.location.value() || "Select location"}
 									</SelectTrigger>

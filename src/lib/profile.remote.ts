@@ -3,6 +3,7 @@ import { getRequestEvent } from '$app/server';
 import * as v from 'valibot';
 import { db } from '$lib/server/db/index.js';
 import { students, companies, users } from '$lib/server/db/schema.js';
+import { calculateStudentProfileCompleteness } from '$lib/utils.js'
 import { eq } from 'drizzle-orm';
 
 // Get user profile
@@ -35,7 +36,27 @@ export const getProfile = query(async () => {
 });
 
 // Update student profile
-export const updateStudentProfile = form(async (data) => {
+export const updateStudentProfile = form(v.object({
+    firstName: v.pipe(v.string(), v.nonEmpty()),
+    lastName: v.pipe(v.string(), v.nonEmpty()),
+    phoneNumber: v.optional(v.string()),
+    university: v.pipe(v.string(), v.nonEmpty()), 
+    department:v.pipe(v.string(), v.nonEmpty()),
+    level: v.pipe(v.number(), v.nonEmpty()),
+    cgpa: v.optional(v.string()),
+    website: v.optional(v.string()),
+    reseumeUrl: v.optional(v.url()),
+    linkedinUrl: v.optional(v.url()),
+    githubUrl: v.optional(v.url()),
+    portfolioUrl: v.optional(v.url()),
+    skills: v.array(v.string()),
+    desiredSkills: v.array(v.string()),
+    location: v.pipe(v.string(), v.nonEmpty()),
+    preferredLocations: v.array(v.string()),
+    requiredSkills: v.optional(v.array(v.string()), []),    
+    preferredIndustries: v.array(v.string()),
+  }),
+  async ({ firstName, lastName, phoneNumber, university, department, level, cgpa, location, bio, resumeUrl, linkedinUrl, githubUrl, portfolioUrl, skills, desiredSkills, preferredLocations, preferredIndustries  }) => {
   const event = getRequestEvent();
   const session = await event.locals.auth();
   
@@ -43,27 +64,9 @@ export const updateStudentProfile = form(async (data) => {
     throw new Error('Student access required');
   }
 
-  const student = await getProfile();
-  if (!student) throw new Error('Student profile not found');
+  const { profile: student } = await getProfile();
 
-  const firstName = data.get('firstName') as string;
-  const lastName = data.get('lastName') as string;
-  const phoneNumber = data.get('phoneNumber') as string;
-  const university = data.get('university') as string;
-  const department = data.get('department') as string;
-  const level = parseInt(data.get('level') as string);
-  const cgpa = parseFloat(data.get('cgpa') as string);
-  const location = data.get('location') as string;
-  const bio = data.get('bio') as string;
-  const linkedinUrl = data.get('linkedinUrl') as string;
-  const githubUrl = data.get('githubUrl') as string;
-  const portfolioUrl = data.get('portfolioUrl') as string;
-  
-  // Parse skills and preferences
-  const skills = JSON.parse(data.get('skills') as string || '[]');
-  const desiredSkills = JSON.parse(data.get('desiredSkills') as string || '[]');
-  const preferredLocations = JSON.parse(data.get('preferredLocations') as string || '[]');
-  const preferredIndustries = JSON.parse(data.get('preferredIndustries') as string || '[]');
+  if (!student) throw new Error('Student profile not found');
 
   // Calculate profile completeness
   const profileCompleteness = calculateStudentProfileCompleteness({
@@ -84,6 +87,7 @@ export const updateStudentProfile = form(async (data) => {
       cgpa,
       location,
       bio,
+      resumeUrl,
       linkedinUrl,
       githubUrl,
       portfolioUrl,
@@ -102,7 +106,19 @@ export const updateStudentProfile = form(async (data) => {
 });
 
 // Update company profile
-export const updateCompanyProfile = form(async (data) => {
+export const updateCompanyProfile = form(
+  v.object({ 
+    name: v.pipe(v.string(), v.nonEmpty()),
+    industry: v.pipe(v.string(), v.nonEmpty()),
+    location: v.pipe(v.string(), v.nonEmpty()),
+    size: v.picklist(['startup', 'small', 'medium', 'large', 'enterprise']), 
+    description: v.pipe(v.string(), v.nonEmpty()),,
+    website: v.optional(v.url()),
+    contactEmail: v.optional(v.email()),
+    contactPhone: v.optional(v.string()),
+    establishedYear: v.optional(v.number())
+  }), 
+  async ({ name, industry, location, size, description, website, contactEmail, contactPhone, establishedYear}) => {
   const event = getRequestEvent();
   const session = await event.locals.auth();
   
@@ -110,18 +126,8 @@ export const updateCompanyProfile = form(async (data) => {
     throw new Error('Company access required');
   }
 
-  const company = await getProfile();
+  const { profile: company} = await getProfile();
   if (!company) throw new Error('Company profile not found');
-
-  const name = data.get('name') as string;
-  const industry = data.get('industry') as string;
-  const location = data.get('location') as string;
-  const size = data.get('size') as string;
-  const description = data.get('description') as string;
-  const website = data.get('website') as string;
-  const contactEmail = data.get('contactEmail') as string;
-  const contactPhone = data.get('contactPhone') as string;
-  const establishedYear = parseInt(data.get('establishedYear') as string);
 
   await db
     .update(companies)
@@ -129,7 +135,7 @@ export const updateCompanyProfile = form(async (data) => {
       name,
       industry,
       location,
-      size: size as any,
+      size,
       description,
       website,
       contactEmail,
@@ -157,7 +163,7 @@ export const uploadResume = command(
       throw new Error('Student access required');
     }
 
-    const student = await getProfile();
+    const { profile: student } = await getProfile();
     if (!student) throw new Error('Student profile not found');
 
     // Update student profile with resume and extracted skills
@@ -178,25 +184,3 @@ export const uploadResume = command(
   }
 );
 
-function calculateStudentProfileCompleteness(profile: any): number {
-  const fields = [
-    'firstName', 'lastName', 'phoneNumber', 'university', 'department',
-    'level', 'cgpa', 'location', 'bio', 'linkedinUrl'
-  ];
-  
-  let completedFields = 0;
-  
-  fields.forEach(field => {
-    if (profile[field] && profile[field] !== '') {
-      completedFields++;
-    }
-  });
-
-  // Add weight for skills and preferences
-  if (profile.skills && profile.skills.length >= 3) completedFields += 0.5;
-  if (profile.desiredSkills && profile.desiredSkills.length >= 2) completedFields += 0.5;
-  if (profile.preferredLocations && profile.preferredLocations.length >= 1) completedFields += 0.5;
-  if (profile.preferredIndustries && profile.preferredIndustries.length >= 1) completedFields += 0.5;
-
-  return Math.min((completedFields / (fields.length + 2)) * 100, 100);
-}

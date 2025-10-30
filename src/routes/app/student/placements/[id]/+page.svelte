@@ -27,9 +27,9 @@
     let coverLetter = $state('');
     let customMessage = $state('');
 
-    let placementId = $derived(page.params.id);
-    let matchAnalysisPromise = $derived(getMatchAnalysis({ placementId }));
-
+    const placementId = $derived(page.params.id);
+    const matchAnalysis = $derived(await getMatchAnalysis({ placementId }));
+    const { placement, score, reasons, hasApplied, applicationStatus } = matchAnalysis
     function getScoreColor(score: number) {
         if (score >= 80) return 'bg-green-500';
         if (score >= 60) return 'bg-yellow-500';
@@ -87,20 +87,12 @@
     }
 </script>
 
-{#await matchAnalysisPromise}
-    <div class="max-w-4xl mx-auto space-y-6">
-        <div class="flex items-center justify-center h-64">
-            <div class="text-center">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p class="text-muted-foreground">Loading placement analysis...</p>
-            </div>
-        </div>
-    </div>
-{:then matchAnalysis}
-    {@const { placement, score, reasons, hasApplied, applicationStatus } = matchAnalysis}
+<svelte:boundary>
+
+
     <div class="max-w-4xl mx-auto space-y-6">
         <div class="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onclick={() => goto('/app/student/matches')}>
+            <Button variant="ghost" size="sm" href="/app/student/matches">
                 <ArrowLeft class="h-4 w-4" />
                 Back to Matches
             </Button>
@@ -389,10 +381,20 @@
         </div>
     </div>
     </div>
-{:catch error}
+{#snippet pending()}
+    <div class="max-w-4xl mx-auto space-y-6">
+        <div class="flex items-center justify-center h-64">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p class="text-muted-foreground">Loading placement analysis...</p>
+            </div>
+        </div>
+    </div>
+{/snippet}
+{#snippet failed(error, reset)}
     <div class="max-w-4xl mx-auto space-y-6">
         <div class="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onclick={() => goto('/app/student/matches')}>
+            <Button variant="ghost" size="sm" href="/app/student/matches">
                 <ArrowLeft class="h-4 w-4" />
                 Back to Matches
             </Button>
@@ -403,8 +405,10 @@
                 <h2 class="text-lg font-semibold mb-2">Failed to Load Placement</h2>
                 <p class="text-muted-foreground">
                     {error.message || 'An error occurred while loading the placement details.'}
+                    <Button onclick={() => reset()}> Retry</Button>
                 </p>
             </CardContent>
         </Card>
     </div>
-{/await}
+{/snippet}
+</svelte:boundary>

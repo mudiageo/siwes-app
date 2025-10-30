@@ -28,7 +28,7 @@ export const getMatches = query(FiltersSchema, async (filters = {}) => {
   const student = await getProfile();
   if (!student) throw new Error('Student profile not found');
 
-  const matches = await findMatches(student.user.id);
+  const matches = await findMatches(student.profile.id);
   
   // Apply filters
   let filteredMatches = matches;
@@ -75,7 +75,7 @@ export const applyToPlacement = command(v.string(), async (placementId) => {
     throw new Error('Student access required');
   }
 
-  const student = await getProfile();
+  const { profile: student } = await getProfile();
   if (!student) throw new Error('Student profile not found');
 
   // Get placement details
@@ -93,7 +93,7 @@ export const applyToPlacement = command(v.string(), async (placementId) => {
     .select()
     .from(applications)
     .where(and(
-      eq(applications.studentId, student.user.id),
+      eq(applications.studentId, student.id),
       eq(applications.placementId, placementId)
     ));
 
@@ -106,7 +106,7 @@ export const applyToPlacement = command(v.string(), async (placementId) => {
 
   // Create application
   const [application] = await db.insert(applications).values({
-    studentId: student.user.id,
+    studentId: student.id,
     placementId,
     matchScore: matchScore.overall,
     matchBreakdown: matchScore.breakdown,

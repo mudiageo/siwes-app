@@ -3,7 +3,7 @@ import { getRequestEvent } from '$app/server';
 import * as v from 'valibot';
 import { db } from '$lib/server/db/index.js';
 import { applications, placements, companies, students } from '$lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { notifyApplicationStatusChange, notifyNewApplication } from '$lib/server/notifications.js';
 import { calculateAIMatchScore } from '$lib/server/ai-matching';
 import { getProfile } from './profile.remote'
@@ -32,7 +32,7 @@ export const getApplications = query(async () => {
       .from(applications)
       .innerJoin(placements, eq(applications.placementId, placements.id))
       .innerJoin(companies, eq(placements.companyId, companies.id))
-      .where(eq(applications.studentId, student.user.id));
+      .where(eq(applications.studentId, student.profile.id));
   } else {
     const company = await getProfile();
     if (!company) throw new Error('Company profile not found');
@@ -46,7 +46,7 @@ export const getApplications = query(async () => {
       .from(applications)
       .innerJoin(placements, eq(applications.placementId, placements.id))
       .innerJoin(students, eq(applications.studentId, students.id))
-      .where(eq(placements.companyId, company.user.id));
+      .where(eq(placements.companyId, company.profile.id));
   }
 
   return userApplications;
@@ -103,7 +103,7 @@ export const updateApplicationStatus = command(
   }
 );
 
-export const applyForPlacement = command(v.object({ placementId: v.string(), coverLetter: v.string()}), async  (placementId: string, coverLetter?: string) => {
+export const applyForPlacement = command(v.object({ placementId: v.string(), coverLetter: v.string()}), async  ({placementId, coverLetter}) => {
 	const event = getRequestEvent();
     const session = await event.locals.auth();
     
@@ -119,7 +119,8 @@ export const applyForPlacement = command(v.object({ placementId: v.string(), cov
 		.select()
 		.from(placements)
 		.where(eq(placements.id, placementId));
-
+console.log(placementId)
+console.log(placement)
 	if (!placement) {
 		throw new Error('Placement not found');
 	}
@@ -129,7 +130,7 @@ export const applyForPlacement = command(v.object({ placementId: v.string(), cov
 		.select()
 		.from(applications)
 		.where(and(
-			eq(applications.studentId, student.user.id),
+			eq(applications.studentId, student.profile.id),
 			eq(applications.placementId, placementId)
 		));
 
@@ -138,15 +139,22 @@ export const applyForPlacement = command(v.object({ placementId: v.string(), cov
 	}
 
 	// Calculate match score
-	const matchScore = calculateAIMatchScore(student, placement);
+	let matchScore;
+	  try {
+		  matchScore = await calculateAIMatchScore(student.profile, placement);
+	  } catch(e) {
+	    console.log('Error: AI Matching failed. Try traditional rule-based matching (no AI) ', e)
+		  matchScore = calculateMatchScore(student.profile, placement);
+	  }
+
 
 	// Create application
 	const [application] = await db.insert(applications).values({
-		studentId: student.id,
+		studentId: student.profile.id,
 		placementId,
 		matchScore: matchScore.overall,
 		matchBreakdown: matchScore.breakdown,
-		coverLetter: coverLetter || generateCoverLetter(student, placement)
+		coverLetter: coverLetter || generateCoverLetter(student.profile, placement)
 	}).returning();
 
 	// Get company user ID for notification

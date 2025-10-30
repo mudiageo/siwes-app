@@ -9,7 +9,7 @@ export const load = (async ({ locals }) => {
 	}
 
 	try {
-		const notifications = await getNotifications(session.user.id);
+		const notifications = await getNotifications();
 		
 		return {
 			notifications,

@@ -39,7 +39,7 @@ async function generateText(options: { prompt: string, model: string }): { text:
 		if(!response.ok) {
 			throw new Error(`Gemini API error: ${data.error?.message|| 'Unknon error'}`);
 		}
-
+console.log(data)
 		if(data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
 			return {
 				text: data.candidates[0]?.content?.parts?.[0]?.text

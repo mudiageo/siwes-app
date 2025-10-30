@@ -34,7 +34,7 @@ import ExternalLink from '@lucide/svelte/icons/external-link';
 	}
 </script>
 
-<Card class="match-card">
+<Card class="match-card p-4">
 	<div class="space-y-4">
 		<!-- Header -->
 		<div class="flex items-start justify-between">
@@ -147,7 +147,7 @@ import ExternalLink from '@lucide/svelte/icons/external-link';
 			<Button class="flex-1" size="sm">
 				Apply Now
 			</Button>
-			<Button variant="outline" size="sm">
+			<Button href="/app/student/placements/{placement.id}" variant="outline" size="sm">
 				<ExternalLink class="h-4 w-4" />
 			</Button>
 		</div>

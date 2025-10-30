@@ -6,7 +6,7 @@
     import { getApplications, updateApplicationStatus } from '$lib/applications.remote';
     import ApplicationStatus from '$lib/components/applications/ApplicationStatus.svelte';
     import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '$lib/components/ui/dialog';
-    import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+    import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
     import Calendar from '@lucide/svelte/icons/calendar';
     import User from '@lucide/svelte/icons/user';
     import Mail from '@lucide/svelte/icons/mail';
@@ -183,7 +183,7 @@
                                                             }}
                                                         >
                                                             <SelectTrigger class="w-full">
-                                                                <SelectValue placeholder="Select status" />
+                                                              {selectedApplication.application.status || "Select status"}
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 <SelectItem value="pending">Pending</SelectItem>
@@ -208,7 +208,7 @@
                                         }}
                                     >
                                         <SelectTrigger class="w-[140px]">
-                                            <SelectValue placeholder="Change status" />
+                                          {application.status || "Change status"}
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="pending">Pending</SelectItem>

@@ -5,6 +5,7 @@ import { isRedirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { students, companies } from '$lib/server/db/schema';
 import { parseAuthError } from '$lib/utils/auth-errors';
+import { calculateStudentProfileCompleteness } from '$lib/utils';
 import * as v from 'valibot';
 
 // Login schema
@@ -120,7 +121,8 @@ export const register = form(registerSchema, async (data, invalid) => {
                     university: data.university as string,
                     department: (data.department as string) || 'Computer Engineering',
                     level: parseInt((data.level as string) || '300'),
-                    location: (data.location as string) || 'Lagos'
+                    location: (data.location as string) || 'Lagos',
+                    profileCompleteness: calculateStudentProfileCompleteness(data) || 0
                 });
             } else if (data.userType === 'company') {
                 await db.insert(companies).values({

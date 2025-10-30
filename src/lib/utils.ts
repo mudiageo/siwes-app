@@ -75,3 +75,26 @@ export function generateMatchReasons(score: { breakdown: { skillsScore: number; 
 	
 	return reasons.slice(0, 3);
 }
+
+export function calculateStudentProfileCompleteness(profile: any): number {
+  const fields = [
+    'firstName', 'lastName', 'phoneNumber', 'university', 'department',
+    'level', 'cgpa', 'location', 'bio', 'linkedinUrl'
+  ];
+  
+  let completedFields = 0;
+  
+  fields.forEach(field => {
+    if (profile[field] && profile[field] !== '') {
+      completedFields++;
+    }
+  });
+
+  // Add weight for skills and preferences
+  if (profile.skills && profile.skills.length >= 3) completedFields += 0.5;
+  if (profile.desiredSkills && profile.desiredSkills.length >= 2) completedFields += 0.5;
+  if (profile.preferredLocations && profile.preferredLocations.length >= 1) completedFields += 0.5;
+  if (profile.preferredIndustries && profile.preferredIndustries.length >= 1) completedFields += 0.5;
+
+  return Math.min((completedFields / (fields.length + 2)) * 100, 100);
+}

@@ -46,7 +46,7 @@ export const findMatches = query(FindMatchesSchema, async (options = {}) => {
 			company: companies
 		})
 		.from(placements)
-		.innerJoin(companies, eq(placements.companyId, companies.userId))
+		.innerJoin(companies, eq(placements.companyId, companies.id))
 		.where(eq(placements.isActive, true))
 		.orderBy(desc(placements.createdAt));
 
@@ -54,10 +54,17 @@ export const findMatches = query(FindMatchesSchema, async (options = {}) => {
 	const matchResults: MatchResult[] = [];
 	
 	for (const { placement, company } of availablePlacements) {
-		const score = await calculateAIMatchScore(student, placement);
-		
+	  let score;
+	  console.log(company)
+	  try {
+		  score = await calculateAIMatchScore(student.profile, placement);
+	  } catch(e) {
+	    console.log('Error: AI Matching failed. Try traditional rule-based matching (no AI) ', e)
+		  score = calculateMatchScore(student.profile, placement);
+	  }
+            
 		// Generate match reasons
-		const reasons = generateMatchReasons(student, placement, score);
+		const reasons = generateMatchReasons(student.profile, placement, score);
 		
 		matchResults.push({
 			placement: { ...placement, company },
@@ -94,7 +101,7 @@ export const getMatchAnalysis = query(MatchAnalysisSchema, async ({ placementId 
 			company: companies
 		})
 		.from(placements)
-		.innerJoin(companies, eq(placements.companyId, companies.userId))
+		.innerJoin(companies, eq(placements.companyId, companies.id))
 		.where(eq(placements.id, placementId))
 		.limit(1);
 
@@ -103,13 +110,13 @@ export const getMatchAnalysis = query(MatchAnalysisSchema, async ({ placementId 
 	}
 
 	const { placement, company } = placementData[0];
-	const score = await calculateAIMatchScore(student, placement);
-	const reasons = generateMatchReasons(student, placement, score);
+	const score = await calculateAIMatchScore(student.profile, placement);
+	const reasons = generateMatchReasons(student.profile, placement, score);
 	
 	// Check if student has already applied
 	const existingApplication = await db.query.applications.findFirst({
 		where: and(
-			eq(applications.studentId, student.id),
+			eq(applications.studentId, student.profile.id),
 			eq(applications.placementId, placementId)
 		)
 	});
@@ -145,7 +152,7 @@ export const generateCoverLetter = command(CoverLetterSchema, async ({ placement
 			company: companies
 		})
 		.from(placements)
-		.innerJoin(companies, eq(placements.companyId, companies.userId))
+		.innerJoin(companies, eq(placements.companyId, companies.id))
 		.where(eq(placements.id, placementId))
 		.limit(1);
 
@@ -154,7 +161,7 @@ export const generateCoverLetter = command(CoverLetterSchema, async ({ placement
 	}
 
 	const { placement, company } = placementData[0];
-	return await generateAICoverLetter(student, placement, company);
+	return await generateAICoverLetter(student.profile, placement, company);
 });
 
 /**
@@ -178,7 +185,7 @@ export const getMatchingStats = query(async () => {
 			company: companies
 		})
 		.from(placements)
-		.innerJoin(companies, eq(placements.companyId, companies.userId))
+		.innerJoin(companies, eq(placements.companyId, companies.id))
 		.where(eq(placements.isActive, true))
 		.orderBy(desc(placements.createdAt));
 
@@ -213,7 +220,7 @@ export const getMatchingStats = query(async () => {
 		})
 		.from(applications)
 		.innerJoin(placements, eq(applications.placementId, placements.id))
-		.innerJoin(companies, eq(placements.companyId, companies.userId))
+		.innerJoin(companies, eq(placements.companyId, companies.id))
 		.where(eq(applications.studentId, student.id));
 
 	// Sort matches by score for top matches

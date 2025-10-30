@@ -21,7 +21,7 @@
 	import Star from '@lucide/svelte/icons/star';
 	import Award from '@lucide/svelte/icons/award';
 	
-	import { getProfile, updateStudentProfile, uploadResume } from '$lib/profile.remote.js';
+	import { getProfile, updateStudentProfile as updateProfile, uploadResume } from '$lib/profile.remote.js';
 
 	const profileQuery = $derived(await getProfile());
 	let profile = $derived(profileQuery.profile);
@@ -53,7 +53,7 @@
 	});
 
 	const universities = [
-		'University of Lagos', 'University of Ibadan', 'Obafemi Awolowo University',
+		'University of Lagos', 'University of Benin', 'University of Ibadan', 'Obafemi Awolowo University',
 		'Ahmadu Bello University', 'University of Nigeria Nsukka', 'Lagos State University',
 		'Covenant University', 'Babcock University', 'Federal University of Technology Akure',
 		'Rivers State University'
@@ -77,14 +77,11 @@
 		'Agriculture', 'Media & Entertainment'
 	];
 
-	async function handleSave() {
+	async function handleSave({ submit, reset }) {
 		isSaving = true;
 		try {
-			const result = await updateStudentProfile();
+			const result = await submit().updates(getProfile);
 			if (result.success) {
-				// Refresh profile data
-				// const updatedData = await getProfile();
-				// profile = updatedData.profile;
 				isEditing = false;
 			}
 		} catch (error) {
@@ -182,7 +179,7 @@
 
 	<div class="grid lg:grid-cols-3 gap-6">
 		<!-- Main Profile Form -->
-		<div class="lg:col-span-2 space-y-6">
+		<form {...updateProfile.enhance(handleSave)} class="lg:col-span-2 space-y-6">
 			<!-- Personal Information -->
 			<Card class="p-6">
 				<h3 class="text-lg font-semibold mb-6 flex items-center">
@@ -195,7 +192,7 @@
 						<Label for="firstName">First Name</Label>
 						<Input
 							id="firstName"
-							bind:value={formData.firstName}
+							{...updateProfile.field.firstName.as('text')}
 							disabled={!isEditing}
 							required
 						/>
@@ -205,7 +202,7 @@
 						<Label for="lastName">Last Name</Label>
 						<Input
 							id="lastName"
-							bind:value={formData.lastName}
+							{...updateProfile.field.lastName.as('text')}
 							disabled={!isEditing}
 							required
 						/>
@@ -215,8 +212,7 @@
 						<Label for="phoneNumber">Phone Number</Label>
 						<Input
 							id="phoneNumber"
-							type="tel"
-							bind:value={formData.phoneNumber}
+							{...updateProfile.field.phoneNumber.as('tel')}
 							disabled={!isEditing}
 							placeholder="+234 xxx xxx xxxx"
 						/>
@@ -224,7 +220,7 @@
 
 					<div class="space-y-2">
 						<Label for="location">Current Location</Label>
-						<Select bind:value={formData.location} disabled={!isEditing}>
+						<Select {...updateProfile.field.location.as('select')} disabled={!isEditing}>
 							<SelectTrigger>
 								{formData.location || "Select location"}
 							</SelectTrigger>
@@ -241,7 +237,8 @@
 					<Label for="bio">Bio</Label>
 					<Textarea
 						id="bio"
-						bind:value={formData.bio}
+						name="bio"
+						{...updateProfile.field.bio.as('text')}
 						disabled={!isEditing}
 						placeholder="Tell us about yourself..."
 						rows="4"
@@ -259,7 +256,7 @@
 				<div class="grid sm:grid-cols-2 gap-4">
 					<div class="space-y-2">
 						<Label for="university">University</Label>
-						<Select bind:value={formData.university} disabled={!isEditing}>
+						<Select bind:value={formData.university} name="university" disabled={!isEditing}>
 							<SelectTrigger>
 								{formData.university || "Select university"}
 							</SelectTrigger>
@@ -273,7 +270,7 @@
 
 					<div class="space-y-2">
 						<Label for="department">Department</Label>
-						<Select bind:value={formData.department} disabled={!isEditing}>
+						<Select bind:value={formData.department} name="department" disabled={!isEditing}>
 							<SelectTrigger>
 								{formData.department || "Select department"}
 							</SelectTrigger>
@@ -287,7 +284,7 @@
 
 					<div class="space-y-2">
 						<Label for="level">Level</Label>
-						<Select bind:value={formData.level} disabled={!isEditing}>
+						<Select bind:value={formData.level} name="level" disabled={!isEditing}>
 							<SelectTrigger>
 								{formData.level || "Select level"}
 							</SelectTrigger>
@@ -304,11 +301,10 @@
 						<Label for="cgpa">CGPA</Label>
 						<Input
 							id="cgpa"
-							type="number"
-							step="0.01"
+              {...updateProfile.field.cgpa.as('number')}
+              step="0.01"
 							min="0"
 							max="5.0"
-							bind:value={formData.cgpa}
 							disabled={!isEditing}
 							placeholder="4.50"
 						/>
@@ -330,7 +326,7 @@
 							Skills you already have
 						</p>
 						<SkillsInput
-							bind:value={formData.skills}
+							field={updateProfile.fields.skills}
 							disabled={!isEditing}
 							placeholder="Add your skills..."
 						/>
@@ -342,7 +338,7 @@
 							Skills you want to develop during your placement
 						</p>
 						<SkillsInput
-							bind:value={formData.desiredSkills}
+							field={updateProfile.fields.desiredSkills}
 							disabled={!isEditing}
 							placeholder="Skills you want to learn..."
 						/>
@@ -364,7 +360,7 @@
 							Where would you like to do your placement?
 						</p>
 						<SkillsInput
-							bind:value={formData.preferredLocations}
+							field={updateProfile.fields.preferredLocations}
 							disabled={!isEditing}
 							placeholder="Add preferred locations..."
 							suggestions={locations}
@@ -377,7 +373,7 @@
 							Which industries interest you?
 						</p>
 						<SkillsInput
-							bind:value={formData.preferredIndustries}
+							field={updateProfile.fields.preferredIndustries}
 							disabled={!isEditing}
 							placeholder="Add preferred industries..."
 							suggestions={industries}
@@ -401,8 +397,7 @@
 						</Label>
 						<Input
 							id="linkedinUrl"
-							type="url"
-							bind:value={formData.linkedinUrl}
+							{...updateProfile.field.linkedinUrl.as('url')}
 							disabled={!isEditing}
 							placeholder="https://linkedin.com/in/your-profile"
 						/>
@@ -415,8 +410,7 @@
 						</Label>
 						<Input
 							id="githubUrl"
-							type="url"
-							bind:value={formData.githubUrl}
+							{...updateProfile.field.githubUrl.as('url')}
 							disabled={!isEditing}
 							placeholder="https://github.com/your-username"
 						/>
@@ -429,15 +423,14 @@
 						</Label>
 						<Input
 							id="portfolioUrl"
-							type="url"
-							bind:value={formData.portfolioUrl}
+							{...updateProfile.field.portfolioUrl.as('url')}
 							disabled={!isEditing}
 							placeholder="https://your-portfolio.com"
 						/>
 					</div>
 				</div>
 			</Card>
-		</div>
+		</form>
 
 		<!-- Sidebar -->
 		<div class="space-y-6">

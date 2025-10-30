@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -13,20 +14,19 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import { industries, nigerianStates } from '$lib/services/sample-data.js';
 	import { findMatches, getSkillRecommendations } from '$lib/matching.remote';
-	import { getProfile } from '$lib/profile.remote';
 
-	let searchQuery = $state('');
-	let selectedIndustry = $state('');
-	let selectedLocation = $state('');
-	let selectedDuration = $state('');
+	let searchQuery = $state(page.url.searchParams.get('search') || '');
+	let selectedIndustry = $state(page.url.searchParams.get('industry') || '');
+	let selectedLocation = $state(page.url.searchParams.get('location') || '');
+	let selectedDuration = $state(page.url.searchParams.get('duration') || '');
 	let sortBy = $state('match-score');
 	let showFilters = $state(false);
 	let refreshing = $state(false);
 
-	let profileData = $derived(await getProfile());
-
-	let matchesQuery = $derived(await findMatches());
-	let skillsQuery = $derived(await getSkillRecommendations());
+	let matchesPromise = $derived(findMatches());
+	let skillsPromise = $derived(getSkillRecommendations());
+	let matches = $derived(await matchesPromise);
+	let skills = $derived(await skillsPromise);
 
 	function filterMatches(matches, search, industry, location, duration) {
 		if (!matches) return [];
@@ -73,7 +73,7 @@
 	async function refreshMatches() {
 		refreshing = true;
 		try {
-			await matchesQuery.refresh();
+			await matches.refresh();
 		} catch (error) {
 			console.error('Failed to refresh matches:', error);
 		} finally {
@@ -101,11 +101,9 @@
 		</div>
 		
 		<div class="flex items-center space-x-2">
-			{#await matchesQuery then matches}
-				<Badge variant="secondary" class="text-sm">
+  		<Badge variant="secondary" class="text-sm">
 					{matches.length} matches found
-				</Badge>
-			{/await}
+			</Badge>
 			<Button variant="outline" size="sm" onclick={refreshMatches} disabled={refreshing}>
 				<RefreshCw class="h-4 w-4 mr-2 {refreshing ? 'animate-spin' : ''}" />
 				Refresh
@@ -204,11 +202,7 @@
 	</Card>
 
 	<!-- Matches Grid -->
-	{#await matchesQuery}
-		<div class="text-center py-12">
-			<p class="text-muted-foreground">Finding your perfect matches...</p>
-		</div>
-	{:then matches}
+<svelte:boundary>
 		{@const filteredMatches = sortMatches(filterMatches(matches, searchQuery, selectedIndustry, selectedLocation, selectedDuration), sortBy)}
 		{#if filteredMatches.length > 0}
 			<div class="grid lg:grid-cols-2 gap-6">
@@ -237,26 +231,29 @@
 				</div>
 			</Card>
 		{/if}
-	{:catch error}
+	{#snippet pending()}
+	<div class="text-center py-12">
+			<p class="text-muted-foreground">Finding your perfect matches...</p>
+		</div>
+	{/snippet}
+	{#snippet failed(error)}
 		<div class="text-center py-12">
 			<p class="text-red-500">Error loading matches: {error.message}</p>
 		</div>
-	{/await}
-
+	{/snippet}
+</svelte:boundary>
 	<!-- Skill Recommendations -->
-	{#await skillsQuery then skills}
-		{#if skills.recommended.length > 0}
-			<Card class="p-6">
-				<h3 class="text-lg font-semibold mb-4">Recommended Skills to Learn</h3>
-				<div class="flex flex-wrap gap-2">
-					{#each skills.recommended.slice(0, 10) as skill}
-						<Badge variant="outline" class="text-sm">
-							{skill.skill}
-							<span class="ml-1 text-xs text-muted-foreground">({skill.frequency})</span>
-						</Badge>
-					{/each}
-				</div>
-			</Card>
-		{/if}
-	{/await}
+	{#if skills.recommended?.length > 0}
+		<Card class="p-6">
+			<h3 class="text-lg font-semibold mb-4">Recommended Skills to Learn</h3>
+			<div class="flex flex-wrap gap-2">
+				{#each skills.recommended.slice(0, 10) as skill}
+					<Badge variant="outline" class="text-sm">
+						{skill.skill}
+						<span class="ml-1 text-xs text-muted-foreground">({skill.frequency})</span>
+					</Badge>
+				{/each}
+			</div>
+		</Card>
+	{/if}
 </div>
