@@ -157,7 +157,7 @@ export const register = form(registerSchema, async (data, invalid) => {
         }
         
         // Redirect based on user type if needed
-        redirect(303, `/app/${event.locals.user?.userType}`)
+        redirect(303, `/app/${data.userType}`)
 
         return {
             success: true
