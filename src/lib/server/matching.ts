@@ -265,7 +265,7 @@ async function generateText(options: { prompt: string; model: string }): Promise
     const { prompt, model } = options;
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
             method: 'POST',
             headers: {
 				'Content-Type': 'application/json',
@@ -329,7 +329,7 @@ Respond with only a number between 0 and 1 (e.g., 0.85).
 `;
 
         const { text } = await generateText({
-            model: 'gemini-2.0-flash-exp',
+            model: 'gemini-2.5-flash',
             prompt
         });
 
@@ -373,7 +373,7 @@ Requirements:
 `;
 
         const { text } = await generateText({
-            model: 'gemini-2.0-flash-exp',
+            model: 'gemini-2.5-flash',
             prompt
         });
 

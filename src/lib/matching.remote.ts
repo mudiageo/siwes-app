@@ -3,7 +3,7 @@ import { getRequestEvent } from '$app/server';
 import * as v from 'valibot';
 import { db } from '$lib/server/db/index.js';
 import { students, placements, companies, applications } from '$lib/server/db/schema.js';
-import { calculateAIMatchScore, generateAICoverLetter, type MatchResult } from '$lib/server/ai-matching.js';
+import { calculateAIMatchScore, generateAICoverLetter, type MatchResult } from '$lib/server/matching.js';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { getProfile } from './profile.remote';
 
