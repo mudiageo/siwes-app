@@ -14,23 +14,27 @@
 	let { userType = 'student' }: Props = $props();
 
 	const studentNavItems = [
-		{ href: '/dashboard', icon: Home, label: 'Home' },
-		{ href: '/matches', icon: Search, label: 'Matches', badge: '5' },
-		{ href: '/applications', icon: FileText, label: 'Apps', badge: '3' },
-		{ href: '/profile', icon: User, label: 'Profile' }
+		{ href: '/app/student', icon: Home, label: 'Home' },
+		{ href: '/app/student/matches', icon: Search, label: 'Matches', badge: '5' },
+		{ href: '/app/student/applications', icon: FileText, label: 'Apps', badge: '3' },
+		{ href: '/app/student/profile', icon: User, label: 'Profile' }
 	];
 
 	const companyNavItems = [
-		{ href: '/dashboard', icon: Home, label: 'Home' },
-		{ href: '/placements', icon: Search, label: 'Placements' },
-		{ href: '/applications', icon: FileText, label: 'Apps', badge: '12' },
-		{ href: '/profile', icon: User, label: 'Profile' }
+		{ href: '/app/company', icon: Home, label: 'Home' },
+		{ href: '/app/company/placements', icon: Search, label: 'Placements' },
+		{ href: '/app/company/applications', icon: FileText, label: 'Apps', badge: '12' },
+		{ href: '/app/company/profile', icon: User, label: 'Profile' }
 	];
 
 	let navItems = $derived(userType === 'student' ? studentNavItems : companyNavItems);
 	let currentPath = $derived(page.url.pathname);
 
 	function isActive(href: string): boolean {
+		const basePath = userType === 'student' ? '/app/student' : '/app/company';
+		if (href === basePath) {
+			return currentPath === href;
+		}
 		return currentPath === href || currentPath.startsWith(href + '/');
 	}
 </script>

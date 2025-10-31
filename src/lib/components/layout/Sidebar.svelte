@@ -23,26 +23,30 @@ import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	let { collapsed = $bindable(false), userType = 'student' }: Props = $props();
 
 	const studentNavItems = [
-		{ href: '/dashboard', icon: Home, label: 'Home' },
-		{ href: '/matches', icon: Search, label: 'Matches', badge: '5' },
-		{ href: '/applications', icon: FileText, label: 'Applications', badge: '3' },
-		{ href: '/profile', icon: User, label: 'Profile' },
-		{ href: '/settings', icon: Settings, label: 'Settings' }
+		{ href: '/app/student', icon: Home, label: 'Dashboard' },
+		{ href: '/app/student/matches', icon: Search, label: 'Matches', badge: '5' },
+		{ href: '/app/student/applications', icon: FileText, label: 'Applications', badge: '3' },
+		{ href: '/app/student/profile', icon: User, label: 'Profile' },
+		{ href: '/app/student/settings', icon: Settings, label: 'Settings' }
 	];
 
 	const companyNavItems = [
-		{ href: '/dashboard', icon: Home, label: 'Dashboard' },
-		{ href: '/placements', icon: Building2, label: 'Placements' },
-		{ href: '/applications', icon: FileText, label: 'Applications', badge: '12' },
-		{ href: '/analytics', icon: BarChart3, label: 'Analytics' },
-		{ href: '/profile', icon: User, label: 'Profile' },
-		{ href: '/settings', icon: Settings, label: 'Settings' }
+		{ href: '/app/company', icon: Home, label: 'Dashboard' },
+		{ href: '/app/company/placements', icon: Building2, label: 'Placements' },
+		{ href: '/app/company/applications', icon: FileText, label: 'Applications', badge: '12' },
+		{ href: '/app/company/analytics', icon: BarChart3, label: 'Analytics' },
+		{ href: '/app/company/profile', icon: User, label: 'Profile' },
+		{ href: '/app/company/settings', icon: Settings, label: 'Settings' }
 	];
 
 	let navItems = $derived(userType === 'student' ? studentNavItems : companyNavItems);
 	let currentPath = $derived(page.url.pathname);
 
 	function isActive(href: string): boolean {
+		const basePath = userType === 'student' ? '/app/student' : '/app/company';
+		if (href === basePath) {
+			return currentPath === href;
+		}
 		return currentPath === href || currentPath.startsWith(href + '/');
 	}
 </script>

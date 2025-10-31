@@ -4,28 +4,32 @@
 	import Bell from '@lucide/svelte/icons/bell';
 	import Menu from '@lucide/svelte/icons/menu';
 	import SunIcon from "@lucide/svelte/icons/sun";
-   import MoonIcon from "@lucide/svelte/icons/moon";
- 
- import { toggleMode } from "mode-watcher";
+	import MoonIcon from "@lucide/svelte/icons/moon";
+	import { toggleMode } from "mode-watcher";
 	
 	interface Props {
 		title?: string;
+		userType?: 'student' | 'company' | null;
 		showMobileMenu?: boolean;
 		notificationCount?: number;
 	}
 
 	let {
 		title = '',
+		userType = null,
 		showMobileMenu = $bindable(false),
 		notificationCount = 0,
 	}: Props = $props();
 
-	
+	const portalTitle = $derived(
+		userType === 'student' ? 'Student Portal' : 
+		userType === 'company' ? 'Company Portal' : 
+		title
+	);
 
 	function toggleMobileMenu() {
 		showMobileMenu = !showMobileMenu;
 	}
-
 </script>
  
 
@@ -42,8 +46,10 @@
 		</Button>
 
 		<!-- Title -->
-		<div class="flex flex-col">
-			<h1 class="text-lg font-semibold text-foreground">{title}</h1>
+		<div class="hidden md:block">
+			<nav class="flex items-center space-x-2 text-sm text-muted-foreground">
+				<span>{portalTitle}</span>
+			</nav>
 		</div>
 	</div>
 

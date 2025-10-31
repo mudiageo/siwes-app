@@ -5,21 +5,15 @@
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { browser } from '$app/environment';
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
-	import StudentSidebar from '$lib/components/layout/StudentSidebar.svelte';
-	import CompanySidebar from '$lib/components/layout/CompanySidebar.svelte';
 	import Header from '$lib/components/layout/Header.svelte';
-	import StudentHeader from '$lib/components/layout/StudentHeader.svelte';
-	import CompanyHeader from '$lib/components/layout/CompanyHeader.svelte';
 	import MobileNav from '$lib/components/layout/MobileNav.svelte';
-	import StudentMobileNav from '$lib/components/layout/StudentMobileNav.svelte';
-	import CompanyMobileNav from '$lib/components/layout/CompanyMobileNav.svelte';
 	import { ModeWatcher } from 'mode-watcher';
 
 	let { data, children } = $props();
 
 	let session = $derived(data.session);
 	let user = $derived(session?.user);
-	let userType = $derived(user?.userType);
+	let userType = $derived(user?.userType as 'student' | 'company' | undefined);
 	let isOnAppPage = $derived(page.url.pathname.startsWith('/app'));
 
 	// Redirect to appropriate app section
@@ -37,66 +31,29 @@
 <ModeWatcher />
 
 {#if isOnAppPage && user}
-	<!-- Desktop Layout -->
-	<div class="hidden lg:flex h-screen bg-background">
-		<!-- Sidebar -->
-		<div class="border-r bg-card">
-			{#if userType === 'student'}
-				<StudentSidebar />
-			{:else if userType === 'company'}
-				<CompanySidebar />
-			{:else}
-				<Sidebar />
-			{/if}
+	<!-- Unified Responsive Layout -->
+	<div class="flex h-screen bg-background">
+		<!-- Desktop Sidebar (hidden on mobile) -->
+		<div class="hidden lg:block border-r bg-card">
+			<Sidebar userType={userType} />
 		</div>
 		
-		<!-- Main Content -->
+		<!-- Main Content Area -->
 		<div class="flex-1 flex flex-col overflow-hidden">
 			<!-- Header -->
 			<div class="border-b bg-card">
-				{#if userType === 'student'}
-					<StudentHeader />
-				{:else if userType === 'company'}
-					<CompanyHeader />
-				{:else}
-					<Header />
-				{/if}
+				<Header userType={userType} />
 			</div>
 			
 			<!-- Page Content -->
-			<main class="flex-1 overflow-auto p-6">
+			<main class="flex-1 overflow-auto p-4 lg:p-6">
 				{@render children()}
 			</main>
-		</div>
-	</div>
-
-	<!-- Mobile Layout -->
-	<div class="lg:hidden flex flex-col h-screen bg-background">
-		<!-- Mobile Header -->
-		<div class="border-b bg-card">
-			{#if userType === 'student'}
-				<StudentHeader  />
-			{:else if userType === 'company'}
-				<CompanyHeader />
-			{:else}
-				<Header />
-			{/if}
-		</div>
-		
-		<!-- Page Content -->
-		<main class="flex-1 overflow-auto p-4">
-			{@render children()}
-		</main>
-		
-		<!-- Bottom Navigation -->
-		<div class="border-t bg-card">
-			{#if userType === 'student'}
-				<StudentMobileNav />
-			{:else if userType === 'company'}
-				<CompanyMobileNav />
-			{:else}
-				<MobileNav />
-			{/if}
+			
+			<!-- Mobile Bottom Navigation (hidden on desktop) -->
+			<div class="lg:hidden border-t bg-card">
+				<MobileNav userType={userType} />
+			</div>
 		</div>
 	</div>
 {:else}
