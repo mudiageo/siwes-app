@@ -1,6 +1,5 @@
 <!-- src/routes/app/company/profile/+page.svelte -->
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -8,6 +7,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Alert, AlertDescription } from '$lib/components/ui/alert';
 	import Building2 from '@lucide/svelte/icons/building-2';
 	import MapPin from '@lucide/svelte/icons/map-pin';
 	import Phone from '@lucide/svelte/icons/phone';
@@ -17,30 +17,52 @@
 	import Calendar from '@lucide/svelte/icons/calendar';
 	import Award from '@lucide/svelte/icons/award';
 	import Settings from '@lucide/svelte/icons/settings';
+	import AlertCircle from '@lucide/svelte/icons/alert-circle';
+	import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
 	
 	import { getProfile, updateCompanyProfile } from '$lib/profile.remote.js';
 
-	let { data } = $props();
+	// Get profile data
+	let profileData = $derived(await getProfile());
+	let profile = $derived(profileData.profile);
+	let user = $derived(profileData.user);
 	
-	let profile = $state(data.profile);
-	let user = $state(data.user);
+	// Extract fields from form
+	const { 
+		name,
+		industry,
+		location,
+		size,
+		description,
+		website,
+		contactEmail,
+		contactPhone,
+		establishedYear
+	} = updateCompanyProfile.fields;
 	
 	// Form state
 	let isEditing = $state(false);
 	let isSaving = $state(false);
-	
-	// Form data
-	let formData = $state({
-		name: profile?.name || '',
-		industry: profile?.industry || '',
-		location: profile?.location || '',
-		size: profile?.size || 'medium',
-		description: profile?.description || '',
-		website: profile?.website || '',
-		contactEmail: profile?.contactEmail || '',
-		contactPhone: profile?.contactPhone || '',
-		establishedYear: profile?.establishedYear || new Date().getFullYear()
-	});
+	let saveSuccess = $state(false);
+	let saveError = $state<string | null>(null);
+
+	// Check if form has any validation issues
+	const hasErrors = $derived((updateCompanyProfile.fields.allIssues()?.length || 0) > 0);
+
+	// Initialize form with profile data
+	if (profile && !isEditing) {
+		updateCompanyProfile.fields.set({
+			name: profile.name || '',
+			industry: profile.industry || '',
+			location: profile.location || '',
+			size: profile.size || 'medium',
+			description: profile.description || '',
+			website: profile.website || '',
+			contactEmail: profile.contactEmail || '',
+			contactPhone: profile.contactPhone || '',
+			establishedYear: profile.establishedYear || new Date().getFullYear()
+		});
+	}
 
 	const industries = [
 		'Technology', 'Oil & Gas', 'Banking & Finance', 'Telecommunications',
@@ -61,36 +83,52 @@
 		{ value: 'enterprise', label: 'Enterprise (1000+ employees)' }
 	];
 
-	async function handleSave() {
+	async function handleSave({ submit }) {
 		isSaving = true;
+		saveError = null;
+		saveSuccess = false;
+		
 		try {
-			const result = await updateCompanyProfile(new FormData());
-			if (result.success) {
-				// Refresh profile data
-				const updatedData = await getProfile();
-				profile = updatedData.profile;
-				isEditing = false;
+			// Validate form before submitting
+			await updateCompanyProfile.validate();
+			
+			// Check if there are validation errors
+			if (hasErrors) {
+				saveError = 'Please fix the validation errors before saving.';
+				isSaving = false;
+				return;
 			}
+			
+			await submit().updates(getProfile());
+			isEditing = false;
+			saveSuccess = true;
+			// Auto-hide success message after 3 seconds
+			setTimeout(() => {
+				saveSuccess = false;
+			}, 3000);
 		} catch (error) {
 			console.error('Failed to update profile:', error);
+			saveError = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
 		} finally {
 			isSaving = false;
 		}
 	}
 
 	function handleCancel() {
-		// Reset form data
-		formData = {
-			name: profile?.name || '',
-			industry: profile?.industry || '',
-			location: profile?.location || '',
-			size: profile?.size || 'medium',
-			description: profile?.description || '',
-			website: profile?.website || '',
-			contactEmail: profile?.contactEmail || '',
-			contactPhone: profile?.contactPhone || '',
-			establishedYear: profile?.establishedYear || new Date().getFullYear()
-		};
+		// Reset form data to profile values
+		if (profile) {
+			updateCompanyProfile.fields.set({
+				name: profile.name || '',
+				industry: profile.industry || '',
+				location: profile.location || '',
+				size: profile.size || 'medium',
+				description: profile.description || '',
+				website: profile.website || '',
+				contactEmail: profile.contactEmail || '',
+				contactPhone: profile.contactPhone || '',
+				establishedYear: profile.establishedYear || new Date().getFullYear()
+			});
+		}
 		isEditing = false;
 	}
 </script>
@@ -100,6 +138,8 @@
 </svelte:head>
 
 <div class="space-y-6">
+	<form {...updateCompanyProfile.enhance(handleSave)}>
+
 	<!-- Header -->
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
@@ -119,12 +159,40 @@
 				<Button variant="outline" onclick={handleCancel} disabled={isSaving}>
 					Cancel
 				</Button>
-				<Button onclick={handleSave} disabled={isSaving}>
+				<Button type="submit" disabled={isSaving}>
 					{isSaving ? 'Saving...' : 'Save Changes'}
 				</Button>
 			</div>
 		{/if}
 	</div>
+
+	<!-- Success/Error Messages -->
+	{#if saveSuccess}
+		<Alert class="border-green-500 bg-green-50 dark:bg-green-950">
+			<CheckCircle2 class="h-4 w-4 text-green-600 dark:text-green-400" />
+			<AlertDescription class="text-green-800 dark:text-green-200">
+				Profile updated successfully!
+			</AlertDescription>
+		</Alert>
+	{/if}
+
+	{#if saveError}
+		<Alert variant="destructive">
+			<AlertCircle class="h-4 w-4" />
+			<AlertDescription>
+				{saveError}
+			</AlertDescription>
+		</Alert>
+	{/if}
+
+	{#if hasErrors && isEditing}
+		<Alert variant="destructive">
+			<AlertCircle class="h-4 w-4" />
+			<AlertDescription>
+				Please fix the errors below before saving.
+			</AlertDescription>
+		</Alert>
+	{/if}
 
 	<div class="grid lg:grid-cols-3 gap-6">
 		<!-- Main Profile Form -->
@@ -141,67 +209,98 @@
 						<Label for="name">Company Name</Label>
 						<Input
 							id="name"
-							bind:value={formData.name}
+							{...name.as('text')}
 							disabled={!isEditing}
 							required
+							class={(name.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 						/>
+						{#each name.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 
 					<div class="grid sm:grid-cols-2 gap-4">
 						<div class="space-y-2">
 							<Label for="industry">Industry</Label>
-							<Select bind:value={formData.industry} disabled={!isEditing}>
-								<SelectTrigger>
-									{formData.industry || "Select industry"}
+							<Select {...industry.as('select')} type="single" disabled={!isEditing} required>
+								<SelectTrigger class={(industry.issues()?.length || 0) > 0 ? 'border-red-500' : ''}>
+									{industry.value() || "Select industry"}
 								</SelectTrigger>
 								<SelectContent>
-									{#each industries as industry}
-										<SelectItem value={industry}>{industry}</SelectItem>
+									{#each industries as ind}
+										<SelectItem value={ind}>{ind}</SelectItem>
 									{/each}
 								</SelectContent>
 							</Select>
+							{#each industry.issues() || [] as issue}
+								<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+									<AlertCircle class="h-3 w-3" />
+									{issue.message}
+								</p>
+							{/each}
 						</div>
 
 						<div class="space-y-2">
 							<Label for="location">Location</Label>
-							<Select bind:value={formData.Location} disabled={!isEditing}>
-								<SelectTrigger>
-									{formData.location || "Select location"}
+							<Select {...location.as('select')} type="submit" disabled={!isEditing} required>
+								<SelectTrigger class={(location.issues()?.length || 0) > 0 ? 'border-red-500' : ''}>
+									{location.value() || "Select location"}
 								</SelectTrigger>
 								<SelectContent>
-									{#each locations as location}
-										<SelectItem value={location}>{location}</SelectItem>
+									{#each locations as loc}
+										<SelectItem value={loc}>{loc}</SelectItem>
 									{/each}
 								</SelectContent>
 							</Select>
+							{#each location.issues() || [] as issue}
+								<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+									<AlertCircle class="h-3 w-3" />
+									{issue.message}
+								</p>
+							{/each}
 						</div>
 					</div>
 
 					<div class="grid sm:grid-cols-2 gap-4">
 						<div class="space-y-2">
 							<Label for="size">Company Size</Label>
-							<Select bind:value={formData.size} disabled={!isEditing}>
-								<SelectTrigger>
-									{formData.size || "Select company size"}
+							<Select {...size.as('select')} type="single" disabled={!isEditing} required>
+								<SelectTrigger class={(size.issues()?.length || 0) > 0 ? 'border-red-500' : ''}>
+									{size.value() || "Select company size"}
 								</SelectTrigger>
 								<SelectContent>
-									{#each companySizes as size}
-										<SelectItem value={size.value}>{size.label}</SelectItem>
+									{#each companySizes as companySize}
+										<SelectItem value={companySize.value}>{companySize.label}</SelectItem>
 									{/each}
 								</SelectContent>
 							</Select>
+							{#each size.issues() || [] as issue}
+								<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+									<AlertCircle class="h-3 w-3" />
+									{issue.message}
+								</p>
+							{/each}
 						</div>
 
 						<div class="space-y-2">
 							<Label for="establishedYear">Established Year</Label>
 							<Input
 								id="establishedYear"
-								type="number"
-								bind:value={formData.establishedYear}
+								{...establishedYear.as('number')}
 								disabled={!isEditing}
 								min="1800"
 								max={new Date().getFullYear()}
+								class={(establishedYear.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 							/>
+							{#each establishedYear.issues() || [] as issue}
+								<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+									<AlertCircle class="h-3 w-3" />
+									{issue.message}
+								</p>
+							{/each}
 						</div>
 					</div>
 
@@ -209,11 +308,19 @@
 						<Label for="description">Company Description</Label>
 						<Textarea
 							id="description"
-							bind:value={formData.description}
+							{...description.as('text')}
 							disabled={!isEditing}
 							placeholder="Tell students about your company, culture, and what makes you a great place for SIWES placements..."
 							rows="6"
+							required
+							class={(description.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 						/>
+						{#each description.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 				</div>
 			</Card>
@@ -233,11 +340,17 @@
 						</Label>
 						<Input
 							id="website"
-							type="url"
-							bind:value={formData.website}
+							{...website.as('url')}
 							disabled={!isEditing}
 							placeholder="https://company.com"
+							class={(website.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 						/>
+						{#each website.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 
 					<div class="grid sm:grid-cols-2 gap-4">
@@ -248,11 +361,17 @@
 							</Label>
 							<Input
 								id="contactEmail"
-								type="email"
-								bind:value={formData.contactEmail}
+								{...contactEmail.as('email')}
 								disabled={!isEditing}
 								placeholder="hr@company.com"
+								class={(contactEmail.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 							/>
+							{#each contactEmail.issues() || [] as issue}
+								<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+									<AlertCircle class="h-3 w-3" />
+									{issue.message}
+								</p>
+							{/each}
 						</div>
 
 						<div class="space-y-2">
@@ -262,11 +381,17 @@
 							</Label>
 							<Input
 								id="contactPhone"
-								type="tel"
-								bind:value={formData.contactPhone}
+								{...contactPhone.as('tel')}
 								disabled={!isEditing}
 								placeholder="+234 xxx xxx xxxx"
+								class={(contactPhone.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 							/>
+							{#each contactPhone.issues() || [] as issue}
+								<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+									<AlertCircle class="h-3 w-3" />
+									{issue.message}
+								</p>
+							{/each}
 						</div>
 					</div>
 				</div>
@@ -381,4 +506,5 @@
 			</Card>
 		</div>
 	</div>
+	</form>
 </div>
