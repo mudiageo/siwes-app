@@ -7,6 +7,7 @@
 	import { Select, SelectContent, SelectItem, SelectTrigger, } from '$lib/components/ui/select';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Progress } from '$lib/components/ui/progress';
+	import { Alert, AlertDescription } from '$lib/components/ui/alert';
 	import SkillsInput from '$lib/components/forms/SkillsInput.svelte';
 	import ProfileCompletion from '$lib/components/profile/ProfileCompletion.svelte';
 	import User from '@lucide/svelte/icons/user';
@@ -20,37 +21,67 @@
 	import Upload from '@lucide/svelte/icons/upload';
 	import Star from '@lucide/svelte/icons/star';
 	import Award from '@lucide/svelte/icons/award';
+	import AlertCircle from '@lucide/svelte/icons/alert-circle';
+	import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
 	
-	import { getProfile, updateStudentProfile as updateProfile, uploadResume } from '$lib/profile.remote.js';
+	import { getProfile, updateStudentProfile, uploadResume } from '$lib/profile.remote.js';
 
-	const profileQuery = $derived(await getProfile());
-	let profile = $derived(profileQuery.profile);
-	let user = $derived(profileQuery.user);
+	// Get profile data
+	let profileData = $derived(await getProfile());
+	let profile = $derived(profileData.profile);
+	let user = $derived(profileData.user);
+	
+	// Extract fields from form for easier access
+	const { 
+		firstName, 
+		lastName, 
+		phoneNumber, 
+		university, 
+		department, 
+		level, 
+		cgpa, 
+		location, 
+		bio, 
+		linkedinUrl, 
+		githubUrl, 
+		portfolioUrl, 
+		skills, 
+		desiredSkills, 
+		preferredLocations, 
+		preferredIndustries 
+	} = updateStudentProfile.fields;
 	
 	// Form state
 	let isEditing = $state(false);
 	let isSaving = $state(false);
 	let isUploading = $state(false);
-	
-	// Form data
-	let formData = $state({
-		firstName: profile?.firstName || '',
-		lastName: profile?.lastName || '',
-		phoneNumber: profile?.phoneNumber || '',
-		university: profile?.university || '',
-		department: profile?.department || '',
-		level: profile?.level || 300,
-		cgpa: profile?.cgpa || 0,
-		location: profile?.location || '',
-		bio: profile?.bio || '',
-		linkedinUrl: profile?.linkedinUrl || '',
-		githubUrl: profile?.githubUrl || '',
-		portfolioUrl: profile?.portfolioUrl || '',
-		skills: profile?.skills || [],
-		desiredSkills: profile?.desiredSkills || [],
-		preferredLocations: profile?.preferredLocations || [],
-		preferredIndustries: profile?.preferredIndustries || []
-	});
+	let saveSuccess = $state(false);
+	let saveError = $state<string | null>(null);
+
+	// Check if form has any validation issues
+	const hasErrors = $derived((updateStudentProfile.fields.allIssues()?.length || 0) > 0);
+
+	// Initialize form with profile data
+	if (profile && !isEditing) {
+		updateStudentProfile.fields.set({
+			firstName: profile.firstName || '',
+			lastName: profile.lastName || '',
+			phoneNumber: profile.phoneNumber || '',
+			university: profile.university || '',
+			department: profile.department || '',
+			level: profile.level || 300,
+			cgpa: profile.cgpa || 0,
+			location: profile.location || '',
+			bio: profile.bio || '',
+			linkedinUrl: profile.linkedinUrl || '',
+			githubUrl: profile.githubUrl || '',
+			portfolioUrl: profile.portfolioUrl || '',
+			skills: profile.skills || [],
+			desiredSkills: profile.desiredSkills || [],
+			preferredLocations: profile.preferredLocations || [],
+			preferredIndustries: profile.preferredIndustries || []
+		});
+	}
 
 	const universities = [
 		'University of Lagos', 'University of Benin', 'University of Ibadan', 'Obafemi Awolowo University',
@@ -77,45 +108,65 @@
 		'Agriculture', 'Media & Entertainment'
 	];
 
-	async function handleSave({ submit, reset }) {
+	async function handleSave({ submit }) {
 		isSaving = true;
+		saveError = null;
+		saveSuccess = false;
+		
 		try {
-			const result = await submit().updates(getProfile);
-			if (result.success) {
-				isEditing = false;
+			// Validate form before submitting
+			await updateStudentProfile.validate();
+			
+			// Check if there are validation errors
+			if (hasErrors) {
+				saveError = 'Please fix the validation errors before saving.';
+				isSaving = false;
+				return;
 			}
+			
+			await submit().updates(getProfile());
+			isEditing = false;
+			saveSuccess = true;
+			// Auto-hide success message after 3 seconds
+			setTimeout(() => {
+				saveSuccess = false;
+			}, 3000);
 		} catch (error) {
 			console.error('Failed to update profile:', error);
+			saveError = error instanceof Error ? error.message : 'Failed to update profile. Please try again.';
 		} finally {
 			isSaving = false;
 		}
 	}
 
 	function handleCancel() {
-		// Reset form data
-		formData = {
-			firstName: profile?.firstName || '',
-			lastName: profile?.lastName || '',
-			phoneNumber: profile?.phoneNumber || '',
-			university: profile?.university || '',
-			department: profile?.department || '',
-			level: profile?.level || 300,
-			cgpa: profile?.cgpa || 0,
-			location: profile?.location || '',
-			bio: profile?.bio || '',
-			linkedinUrl: profile?.linkedinUrl || '',
-			githubUrl: profile?.githubUrl || '',
-			portfolioUrl: profile?.portfolioUrl || '',
-			skills: profile?.skills || [],
-			desiredSkills: profile?.desiredSkills || [],
-			preferredLocations: profile?.preferredLocations || [],
-			preferredIndustries: profile?.preferredIndustries || []
-		};
+		// Reset form data to profile values
+		if (profile) {
+			updateStudentProfile.fields.set({
+				firstName: profile.firstName || '',
+				lastName: profile.lastName || '',
+				phoneNumber: profile.phoneNumber || '',
+				university: profile.university || '',
+				department: profile.department || '',
+				level: profile.level || 300,
+				cgpa: profile.cgpa || 0,
+				location: profile.location || '',
+				bio: profile.bio || '',
+				linkedinUrl: profile.linkedinUrl || '',
+				githubUrl: profile.githubUrl || '',
+				portfolioUrl: profile.portfolioUrl || '',
+				skills: profile.skills || [],
+				desiredSkills: profile.desiredSkills || [],
+				preferredLocations: profile.preferredLocations || [],
+				preferredIndustries: profile.preferredIndustries || []
+			});
+		}
 		isEditing = false;
 	}
 
-	async function handleFileUpload(event) {
-		const file = event.target.files?.[0];
+	async function handleFileUpload(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const file = target.files?.[0];
 		if (!file) return;
 
 		isUploading = true;
@@ -127,11 +178,7 @@
 			await uploadResume({
 				fileUrl: 'https://example.com/resume.pdf',
 				extractedSkills: mockExtractedSkills
-			});
-
-			// Refresh profile
-			// const updatedData = await getProfile();
-			// profile = updatedData.profile;
+			}).updates(getProfile());
 			
 		} catch (error) {
 			console.error('Failed to upload resume:', error);
@@ -146,6 +193,7 @@
 </svelte:head>
 
 <div class="space-y-6">
+	<form {...updateStudentProfile.enhance(handleSave)} >
 	<!-- Header -->
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
@@ -165,12 +213,40 @@
 				<Button variant="outline" onclick={handleCancel} disabled={isSaving}>
 					Cancel
 				</Button>
-				<Button onclick={handleSave} disabled={isSaving}>
+				<Button type="submit" disabled={isSaving}>
 					{isSaving ? 'Saving...' : 'Save Changes'}
 				</Button>
 			</div>
 		{/if}
 	</div>
+
+	<!-- Success/Error Messages -->
+	{#if saveSuccess}
+		<Alert class="border-green-500 bg-green-50 dark:bg-green-950">
+			<CheckCircle2 class="h-4 w-4 text-green-600 dark:text-green-400" />
+			<AlertDescription class="text-green-800 dark:text-green-200">
+				Profile updated successfully!
+			</AlertDescription>
+		</Alert>
+	{/if}
+
+	{#if saveError}
+		<Alert variant="destructive">
+			<AlertCircle class="h-4 w-4" />
+			<AlertDescription>
+				{saveError}
+			</AlertDescription>
+		</Alert>
+	{/if}
+
+	{#if hasErrors && isEditing}
+		<Alert variant="destructive">
+			<AlertCircle class="h-4 w-4" />
+			<AlertDescription>
+				Please fix the errors below before saving.
+			</AlertDescription>
+		</Alert>
+	{/if}
 
 	<!-- Profile Completion -->
 	{#if profile?.profileCompleteness < 80}
@@ -179,7 +255,7 @@
 
 	<div class="grid lg:grid-cols-3 gap-6">
 		<!-- Main Profile Form -->
-		<form {...updateProfile.enhance(handleSave)} class="lg:col-span-2 space-y-6">
+		<div class="lg:col-span-2 space-y-6">
 			<!-- Personal Information -->
 			<Card class="p-6">
 				<h3 class="text-lg font-semibold mb-6 flex items-center">
@@ -192,44 +268,71 @@
 						<Label for="firstName">First Name</Label>
 						<Input
 							id="firstName"
-							{...updateProfile.field.firstName.as('text')}
+							{...firstName.as('text')}
 							disabled={!isEditing}
 							required
+							class={(firstName.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 						/>
+						{#each firstName.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 
 					<div class="space-y-2">
 						<Label for="lastName">Last Name</Label>
 						<Input
 							id="lastName"
-							{...updateProfile.field.lastName.as('text')}
+							{...lastName.as('text')}
 							disabled={!isEditing}
 							required
+							class={(lastName.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 						/>
+						{#each lastName.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 
 					<div class="space-y-2">
 						<Label for="phoneNumber">Phone Number</Label>
 						<Input
 							id="phoneNumber"
-							{...updateProfile.field.phoneNumber.as('tel')}
+							{...phoneNumber.as('tel')}
 							disabled={!isEditing}
 							placeholder="+234 xxx xxx xxxx"
+							class={(phoneNumber.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 						/>
+						{#each phoneNumber.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 
 					<div class="space-y-2">
 						<Label for="location">Current Location</Label>
-						<Select {...updateProfile.field.location.as('select')} disabled={!isEditing}>
-							<SelectTrigger>
-								{formData.location || "Select location"}
+						<Select {...location.as('select')} disabled={!isEditing}>
+							<SelectTrigger class={(location.issues()?.length || 0) > 0 ? 'border-red-500' : ''}>
+								{location.value() || "Select location"}
 							</SelectTrigger>
 							<SelectContent>
-								{#each locations as location}
-									<SelectItem value={location}>{location}</SelectItem>
+								{#each locations as loc}
+									<SelectItem value={loc}>{loc}</SelectItem>
 								{/each}
 							</SelectContent>
 						</Select>
+						{#each location.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 				</div>
 
@@ -237,12 +340,18 @@
 					<Label for="bio">Bio</Label>
 					<Textarea
 						id="bio"
-						name="bio"
-						{...updateProfile.field.bio.as('text')}
+						{...bio.as('text')}
 						disabled={!isEditing}
 						placeholder="Tell us about yourself..."
 						rows="4"
+						class={(bio.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 					/>
+					{#each bio.issues() || [] as issue}
+						<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+							<AlertCircle class="h-3 w-3" />
+							{issue.message}
+						</p>
+					{/each}
 				</div>
 			</Card>
 
@@ -256,37 +365,49 @@
 				<div class="grid sm:grid-cols-2 gap-4">
 					<div class="space-y-2">
 						<Label for="university">University</Label>
-						<Select bind:value={formData.university} name="university" disabled={!isEditing}>
-							<SelectTrigger>
-								{formData.university || "Select university"}
+						<Select {...university.as('select')} disabled={!isEditing} required>
+							<SelectTrigger class={(university.issues()?.length || 0) > 0 ? 'border-red-500' : ''}>
+								{university.value() || "Select university"}
 							</SelectTrigger>
 							<SelectContent>
-								{#each universities as university}
-									<SelectItem value={university}>{university}</SelectItem>
+								{#each universities as uni}
+									<SelectItem value={uni}>{uni}</SelectItem>
 								{/each}
 							</SelectContent>
 						</Select>
+						{#each university.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 
 					<div class="space-y-2">
 						<Label for="department">Department</Label>
-						<Select bind:value={formData.department} name="department" disabled={!isEditing}>
-							<SelectTrigger>
-								{formData.department || "Select department"}
+						<Select {...department.as('select')} disabled={!isEditing} required>
+							<SelectTrigger class={(department.issues()?.length || 0) > 0 ? 'border-red-500' : ''}>
+								{department.value() || "Select department"}
 							</SelectTrigger>
 							<SelectContent>
-								{#each departments as department}
-									<SelectItem value={department}>{department}</SelectItem>
+								{#each departments as dept}
+									<SelectItem value={dept}>{dept}</SelectItem>
 								{/each}
 							</SelectContent>
 						</Select>
+						{#each department.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 
 					<div class="space-y-2">
 						<Label for="level">Level</Label>
-						<Select bind:value={formData.level} name="level" disabled={!isEditing}>
-							<SelectTrigger>
-								{formData.level || "Select level"}
+						<Select {...level.as('select')} disabled={!isEditing}>
+							<SelectTrigger class={(level.issues()?.length || 0) > 0 ? 'border-red-500' : ''}>
+								{level.value() || "Select level"}
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="200">200 Level</SelectItem>
@@ -295,19 +416,32 @@
 								<SelectItem value="500">500 Level</SelectItem>
 							</SelectContent>
 						</Select>
+						{#each level.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 
 					<div class="space-y-2">
 						<Label for="cgpa">CGPA</Label>
 						<Input
 							id="cgpa"
-              {...updateProfile.field.cgpa.as('number')}
-              step="0.01"
+							{...cgpa.as('number')}
+							step="0.01"
 							min="0"
 							max="5.0"
 							disabled={!isEditing}
 							placeholder="4.50"
+							class={(cgpa.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 						/>
+						{#each cgpa.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 				</div>
 			</Card>
@@ -326,7 +460,7 @@
 							Skills you already have
 						</p>
 						<SkillsInput
-							field={updateProfile.fields.skills}
+							field={skills}
 							disabled={!isEditing}
 							placeholder="Add your skills..."
 						/>
@@ -338,7 +472,7 @@
 							Skills you want to develop during your placement
 						</p>
 						<SkillsInput
-							field={updateProfile.fields.desiredSkills}
+							field={desiredSkills}
 							disabled={!isEditing}
 							placeholder="Skills you want to learn..."
 						/>
@@ -360,7 +494,7 @@
 							Where would you like to do your placement?
 						</p>
 						<SkillsInput
-							field={updateProfile.fields.preferredLocations}
+							field={preferredLocations}
 							disabled={!isEditing}
 							placeholder="Add preferred locations..."
 							suggestions={locations}
@@ -373,7 +507,7 @@
 							Which industries interest you?
 						</p>
 						<SkillsInput
-							field={updateProfile.fields.preferredIndustries}
+							field={preferredIndustries}
 							disabled={!isEditing}
 							placeholder="Add preferred industries..."
 							suggestions={industries}
@@ -397,10 +531,17 @@
 						</Label>
 						<Input
 							id="linkedinUrl"
-							{...updateProfile.field.linkedinUrl.as('url')}
+							{...linkedinUrl.as('url')}
 							disabled={!isEditing}
 							placeholder="https://linkedin.com/in/your-profile"
+							class={(linkedinUrl.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 						/>
+						{#each linkedinUrl.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 
 					<div class="space-y-2">
@@ -410,10 +551,17 @@
 						</Label>
 						<Input
 							id="githubUrl"
-							{...updateProfile.field.githubUrl.as('url')}
+							{...githubUrl.as('url')}
 							disabled={!isEditing}
 							placeholder="https://github.com/your-username"
+							class={(githubUrl.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 						/>
+						{#each githubUrl.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 
 					<div class="space-y-2">
@@ -423,14 +571,21 @@
 						</Label>
 						<Input
 							id="portfolioUrl"
-							{...updateProfile.field.portfolioUrl.as('url')}
+							{...portfolioUrl.as('url')}
 							disabled={!isEditing}
 							placeholder="https://your-portfolio.com"
+							class={(portfolioUrl.issues()?.length || 0) > 0 ? 'border-red-500' : ''}
 						/>
+						{#each portfolioUrl.issues() || [] as issue}
+							<p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+								<AlertCircle class="h-3 w-3" />
+								{issue.message}
+							</p>
+						{/each}
 					</div>
 				</div>
 			</Card>
-		</form>
+		</div>
 
 		<!-- Sidebar -->
 		<div class="space-y-6">
@@ -506,7 +661,7 @@
 					<div class="pt-4 border-t space-y-2">
 						<div class="flex justify-between text-sm">
 							<span>Skills Added</span>
-							<span>{formData.skills.length}</span>
+							<span>{(skills.value() || []).length}</span>
 						</div>
 						<div class="flex justify-between text-sm">
 							<span>Profile Views</span>
@@ -521,4 +676,5 @@
 			</Card>
 		</div>
 	</div>
+	</form>
 </div>
