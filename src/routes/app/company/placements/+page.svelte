@@ -64,11 +64,11 @@
 		isSaving = true;
 		try {
 		   await submit();
-			if (createPlacement.result.success) {
-				// Refresh placements
-				getCompanyPlacements().refresh();
+			if (createPlacement.result?.success) {
 				showEditDialog = false;
 				selectedPlacement = null;
+				// Refresh placements
+				await getCompanyPlacements().refresh();
 			}
 		} catch (error) {
 			console.error('Failed to update placement:', error);
@@ -79,7 +79,7 @@
 
 	async function toggleStatus(placementId: string, isActive: boolean) {
 		try {
-			await togglePlacementStatus({ placementId, isActive: !isActive }).updates(getCompanyPlacements().withOverride(placements.map(p => 
+			await togglePlacementStatus({ placementId, isActive: !isActive }).updates(getCompanyPlacements().withOverride(placements => placements.map(p => 
 				p.id === placementId ? { ...p, isActive: !isActive } : p)
 			));
 		} catch (error) {
@@ -154,7 +154,7 @@
 			await submit();
 			if (createPlacement.result?.success) {
 				// Refresh placements
-				getCompanyPlacements().refresh();
+				await getCompanyPlacements().refresh();
 				showCreateDialog = false;
 				form.reset();
 			}
@@ -181,7 +181,7 @@
 						<div class="grid grid-cols-2 gap-4">
 							<div class="space-y-2">
 								<Label for="department">Department</Label>
-								<Select type="single" {...createPlacement.fields.department.as('select')}>
+								<Select {...createPlacement.fields.department.as('select')} type="single">
 									<SelectTrigger>
 										{createPlacement.fields.department.value() || "Select department"}
 									</SelectTrigger>

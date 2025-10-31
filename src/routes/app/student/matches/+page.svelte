@@ -73,7 +73,7 @@
 	async function refreshMatches() {
 		refreshing = true;
 		try {
-			await matches.refresh();
+			await findMatches().refresh();
 		} catch (error) {
 			console.error('Failed to refresh matches:', error);
 		} finally {

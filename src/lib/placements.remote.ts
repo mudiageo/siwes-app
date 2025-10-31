@@ -33,13 +33,13 @@ export const getCompanyPlacements = query(async () => {
     throw new Error('Company access required');
   }
 
-  const company = await getProfile();
+  const { profile: company } = await getProfile();
   if (!company) throw new Error('Company profile not found');
 
   const companyPlacements = await db
     .select()
     .from(placements)
-    .where(eq(placements.companyId, company.profile.id))
+    .where(eq(placements.companyId, company.id))
     .orderBy(desc(placements.createdAt));
 
   return companyPlacements;
@@ -71,11 +71,11 @@ export const createPlacement = form(createPlacementSchema, async (data) => {
     throw new Error('Company access required');
   }
 
-  const company = await getProfile();
+  const { profile: company } = await getProfile();
   if (!company) throw new Error('Company profile not found');
 
   const [placement] = await db.insert(placements).values({
-    companyId: company.profile.id,
+    companyId: company.id,
     title: data.title,
     department: data.department,
     description: data.description,
