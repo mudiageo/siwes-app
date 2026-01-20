@@ -1,4 +1,3 @@
-<!-- src/routes/app/company/profile/+page.svelte -->
 <script lang="ts">
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
@@ -50,19 +49,7 @@
 	const hasErrors = $derived((updateCompanyProfile.fields.allIssues()?.length || 0) > 0);
 
 	// Initialize form with profile data
-	if (profile && !isEditing) {
-		updateCompanyProfile.fields.set({
-			name: profile.name || '',
-			industry: profile.industry || '',
-			location: profile.location || '',
-			size: profile.size || 'medium',
-			description: profile.description || '',
-			website: profile.website || '',
-			contactEmail: profile.contactEmail || '',
-			contactPhone: profile.contactPhone || '',
-			establishedYear: profile.establishedYear || new Date().getFullYear()
-		});
-	}
+	handleReset()
 
 	const industries = [
 		'Technology', 'Oil & Gas', 'Banking & Finance', 'Telecommunications',
@@ -114,21 +101,9 @@
 		}
 	}
 
-	function handleCancel() {
+	function handleReset() {
 		// Reset form data to profile values
-		if (profile) {
-			updateCompanyProfile.fields.set({
-				name: profile.name || '',
-				industry: profile.industry || '',
-				location: profile.location || '',
-				size: profile.size || 'medium',
-				description: profile.description || '',
-				website: profile.website || '',
-				contactEmail: profile.contactEmail || '',
-				contactPhone: profile.contactPhone || '',
-				establishedYear: profile.establishedYear || new Date().getFullYear()
-			});
-		}
+		if (profile) updateCompanyProfile.fields.set(profile)
 		isEditing = false;
 	}
 </script>

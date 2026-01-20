@@ -28,8 +28,8 @@
     let customMessage = $state('');
 
     const placementId = $derived(page.params.id);
-    const matchAnalysis = $derived(await getMatchAnalysis({ placementId }));
-    const { placement, score, reasons, hasApplied, applicationStatus } = matchAnalysis
+    const { placement, score, reasons, hasApplied, applicationStatus } = $derived(await getMatchAnalysis({ placementId }));
+    
     function getScoreColor(score: number) {
         if (score >= 80) return 'bg-green-500';
         if (score >= 60) return 'bg-yellow-500';

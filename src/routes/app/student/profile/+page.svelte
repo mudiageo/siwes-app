@@ -62,26 +62,7 @@
 	const hasErrors = $derived((updateStudentProfile.fields.allIssues()?.length || 0) > 0);
 
 	// Initialize form with profile data
-	if (profile && !isEditing) {
-		updateStudentProfile.fields.set({
-			firstName: profile.firstName || '',
-			lastName: profile.lastName || '',
-			phoneNumber: profile.phoneNumber || '',
-			university: profile.university || '',
-			department: profile.department || '',
-			level: profile.level || 300,
-			cgpa: profile.cgpa || 0,
-			location: profile.location || '',
-			bio: profile.bio || '',
-			linkedinUrl: profile.linkedinUrl || '',
-			githubUrl: profile.githubUrl || '',
-			portfolioUrl: profile.portfolioUrl || '',
-			skills: profile.skills || [],
-			desiredSkills: profile.desiredSkills || [],
-			preferredLocations: profile.preferredLocations || [],
-			preferredIndustries: profile.preferredIndustries || []
-		});
-	}
+	handleReset()
 
 	const universities = [
 		'University of Lagos', 'University of Benin', 'University of Ibadan', 'Obafemi Awolowo University',
@@ -139,28 +120,9 @@
 		}
 	}
 
-	function handleCancel() {
+	function handleReset() {
 		// Reset form data to profile values
-		if (profile) {
-			updateStudentProfile.fields.set({
-				firstName: profile.firstName || '',
-				lastName: profile.lastName || '',
-				phoneNumber: profile.phoneNumber || '',
-				university: profile.university || '',
-				department: profile.department || '',
-				level: profile.level || 300,
-				cgpa: profile.cgpa || 0,
-				location: profile.location || '',
-				bio: profile.bio || '',
-				linkedinUrl: profile.linkedinUrl || '',
-				githubUrl: profile.githubUrl || '',
-				portfolioUrl: profile.portfolioUrl || '',
-				skills: profile.skills || [],
-				desiredSkills: profile.desiredSkills || [],
-				preferredLocations: profile.preferredLocations || [],
-				preferredIndustries: profile.preferredIndustries || []
-			});
-		}
+		if (profile)	updateStudentProfile.fields.set(profile)
 		isEditing = false;
 	}
 
@@ -210,7 +172,7 @@
 			</Button>
 		{:else}
 			<div class="flex gap-2">
-				<Button variant="outline" onclick={handleCancel} disabled={isSaving}>
+				<Button variant="outline" onclick={handleReset} disabled={isSaving}>
 					Cancel
 				</Button>
 				<Button type="submit" disabled={isSaving}>

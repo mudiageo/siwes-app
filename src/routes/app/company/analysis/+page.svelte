@@ -21,7 +21,7 @@
 	import Briefcase from '@lucide/svelte/icons/briefcase';
 	import CheckCircle from '@lucide/svelte/icons/check-circle';
 	import Clock from '@lucide/svelte/icons/clock';
-	import Calendar as CalendarIcon from '@lucide/svelte/icons/calendar';
+	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import Download from '@lucide/svelte/icons/download';
 	import BarChart from '@lucide/svelte/icons/bar-chart';
 	import PieChart from '@lucide/svelte/icons/pie-chart';
@@ -29,8 +29,8 @@
 	
 	// Date range state
 	let dateRange = $state('30days');
-	let customStartDate = $state<Date | undefined>(undefined);
-	let customEndDate = $state<Date | undefined>(undefined);
+	let customStartDate: Date | null = $state(null);
+	let customEndDate: Date | null = $state(null);
 	
 	// Calculate date range based on selection
 	let dateFilters = $derived.by(() => {
@@ -107,96 +107,6 @@
 			case 'custom': return 'Custom range';
 			default: return 'Select period';
 		}
-	}
-</script>
-		averageApplicationsPerPlacement: 20.4,
-		acceptanceRate: 19.6,
-		trends: {
-			placements: 12.5,
-			applications: 8.3,
-			acceptances: -2.1
-		}
-	});
-	
-	// Applications over time
-	let applicationsOverTime = $state([
-		{ date: 'Jan 1', applications: 15, acceptances: 3 },
-		{ date: 'Jan 8', applications: 22, acceptances: 4 },
-		{ date: 'Jan 15', applications: 18, acceptances: 2 },
-		{ date: 'Jan 22', applications: 28, acceptances: 6 },
-		{ date: 'Jan 29', applications: 25, acceptances: 5 },
-		{ date: 'Feb 5', applications: 31, acceptances: 7 },
-		{ date: 'Feb 12', applications: 27, acceptances: 4 }
-	]);
-	
-	// Applications by status
-	let applicationsByStatus = $state([
-		{ status: 'Pending', count: 89, percentage: 36.3, color: 'hsl(var(--chart-1))' },
-		{ status: 'Reviewed', count: 72, percentage: 29.4, color: 'hsl(var(--chart-2))' },
-		{ status: 'Accepted', count: 48, percentage: 19.6, color: 'hsl(var(--chart-3))' },
-		{ status: 'Rejected', count: 36, percentage: 14.7, color: 'hsl(var(--chart-4))' }
-	]);
-	
-	// Top universities
-	let topUniversities = $state([
-		{ name: 'University of Lagos', applications: 45, acceptances: 12 },
-		{ name: 'University of Ibadan', applications: 38, acceptances: 9 },
-		{ name: 'Ahmadu Bello University', applications: 32, acceptances: 8 },
-		{ name: 'Obafemi Awolowo University', applications: 28, acceptances: 6 },
-		{ name: 'University of Benin', applications: 24, acceptances: 5 }
-	]);
-	
-	// Top departments
-	let topDepartments = $state([
-		{ name: 'Computer Science', applications: 78, percentage: 31.8 },
-		{ name: 'Software Engineering', applications: 56, percentage: 22.9 },
-		{ name: 'Computer Engineering', applications: 42, percentage: 17.1 },
-		{ name: 'Information Technology', applications: 38, percentage: 15.5 },
-		{ name: 'Electrical Engineering', applications: 31, percentage: 12.7 }
-	]);
-	
-	// Placement performance
-	let placementPerformance = $state([
-		{
-			title: 'Software Engineering Intern',
-			applications: 42,
-			accepted: 8,
-			acceptanceRate: 19.0,
-			avgMatchScore: 87.5
-		},
-		{
-			title: 'Data Science Intern',
-			applications: 35,
-			accepted: 7,
-			acceptanceRate: 20.0,
-			avgMatchScore: 85.2
-		},
-		{
-			title: 'Frontend Developer Intern',
-			applications: 38,
-			accepted: 6,
-			acceptanceRate: 15.8,
-			avgMatchScore: 82.8
-		},
-		{
-			title: 'Backend Developer Intern',
-			applications: 33,
-			accepted: 7,
-			acceptanceRate: 21.2,
-			avgMatchScore: 88.1
-		},
-		{
-			title: 'Mobile Developer Intern',
-			applications: 29,
-			accepted: 5,
-			acceptanceRate: 17.2,
-			avgMatchScore: 84.3
-		}
-	]);
-	
-	function exportReport() {
-		// Implement export functionality
-		console.log('Exporting report...');
 	}
 </script>
 
